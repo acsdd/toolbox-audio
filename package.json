@@ -1,0 +1,53 @@
+{
+  "name": "toolbox-audio",
+  "productName": "ArtistWave",
+  "version": "0.1.0",
+  "description": "Standalone ArtistWave player — a thin native shell around the ArtistWave web app.",
+  "author": "Alpha Team",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "main": "scripts/desktop.cjs",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "npm run build && electron scripts/desktop.cjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "npm run build && node --test \"test/**/*.test.ts\"",
+    "smoke": "npm run build && electron scripts/smoke.cjs",
+    "portable": "node scripts/pack-portable.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "electron": "^45.2.3",
+    "electron-builder": "^26.18.0",
+    "typescript": "^5.8.3"
+  },
+  "build": {
+    "appId": "com.alpha.toolbox.audio",
+    "productName": "ArtistWave",
+    "copyright": "Copyright © 2026 Alpha Team",
+    "directories": { "output": "dist", "buildResources": "build" },
+    "files": ["dist/**/*.js", "scripts/desktop.cjs", "package.json"],
+    "asar": true,
+    "compression": "maximum",
+    "win": {
+      "icon": "build/icon.png",
+      "target": [
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "ArtistWave",
+      "artifactName": "${productName}-Setup-${version}.${ext}",
+      "deleteAppDataOnUninstall": false
+    },
+    "portable": { "artifactName": "${productName}-Portable-${version}.${ext}" }
+  }
+}
