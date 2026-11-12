@@ -10,7 +10,7 @@ app.setPath('userData', userData)
 const appMain = process.argv[2] ? path.resolve(process.argv[2]) : path.join(__dirname, 'desktop.cjs')
 require(appMain)
 
-const APP_PREFIX = 'https://28121978444.github.io/ArtistWave/'
+const APP_PREFIX = 'https://acsdd.github.io/ArtistWave/'
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 async function waitForWindow() {

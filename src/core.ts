@@ -1,4 +1,4 @@
-export const APP_PREFIX = 'https://28121978444.github.io/ArtistWave/'
+export const APP_PREFIX = 'https://acsdd.github.io/ArtistWave/'
 
 export function isArtistWaveMiniUrl(raw: string, prefix: string = APP_PREFIX): boolean {
   try {

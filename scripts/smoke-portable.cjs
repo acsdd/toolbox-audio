@@ -33,7 +33,7 @@ app.whenReady().then(async () => {
   assert.equal(prefs.contextIsolation, true)
   assert.equal(prefs.nodeIntegration, false)
   const url = await win.webContents.mainFrame.executeJavaScript(`location.href`, false)
-  assert.ok(url.startsWith('https://28121978444.github.io/ArtistWave/'), `bad url ${url}`)
+  assert.ok(url.startsWith('https://acsdd.github.io/ArtistWave/'), `bad url ${url}`)
   console.log(JSON.stringify({ ok: true, url }))
   clearTimeout(watchdog)
   app.exit(0)

@@ -24,7 +24,7 @@ all live in the remote web app. This repository owns only the native wrapper.
 
 - Windows 10/11 x64
 - Node.js 22+ (for development and packaging)
-- Network access — the player loads `https://28121978444.github.io/ArtistWave/`.
+- Network access — the player loads `https://acsdd.github.io/ArtistWave/`.
   There is **no offline mode**; the remote page must be reachable.
 
 ## Run

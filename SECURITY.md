@@ -6,7 +6,7 @@ page.
 
 ## What the shell does
 
-- Loads `https://28121978444.github.io/ArtistWave/` in a single sandboxed window.
+- Loads `https://acsdd.github.io/ArtistWave/` in a single sandboxed window.
 - Manages the native window (mini-player sizing, always-on-top, restore).
 - Opens `http(s)` links in the system browser; denies every other popup.
 - Keeps audio playing when the window is backgrounded.
