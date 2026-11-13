@@ -1,0 +1,21 @@
+:root { color-scheme: dark; font-family: "Segoe UI", sans-serif; background: #0b1015; color: #edf3f7; }
+* { box-sizing: border-box; }
+body { margin: 0; padding: 28px; background: radial-gradient(circle at 85% 5%, #17313b 0, #0b1015 48%); }
+header { max-width: 760px; margin: 0 auto 24px; }
+.eyebrow { color: #72d5c0; letter-spacing: .18em; font-weight: 700; font-size: 11px; }
+h1 { margin: 4px 0 8px; font-size: 32px; }
+.intro { max-width: 640px; color: #aebdc8; line-height: 1.55; margin: 0; }
+main { max-width: 760px; margin: auto; }
+.widget-list { display: grid; gap: 12px; }
+.widget-card { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 18px; border: 1px solid #293a43; border-radius: 14px; background: rgba(19, 31, 38, .92); box-shadow: 0 10px 28px #0003; }
+.widget-copy h2 { margin: 0 0 7px; font-size: 18px; }
+.widget-copy p { margin: 0 0 8px; color: #c1ccd2; line-height: 1.45; }
+.widget-copy small { color: #80a3a8; }
+.actions { display: flex; gap: 8px; flex: 0 0 auto; }
+button { min-width: 84px; border: 1px solid #47616a; border-radius: 8px; padding: 9px 13px; color: #e9f1f3; background: #1a2a32; cursor: pointer; font: inherit; }
+button:hover { background: #28404a; }
+button.primary { border-color: #66c9b8; color: #09201d; background: #74d9c5; font-weight: 700; }
+.status { min-height: 24px; margin: 14px 2px; color: #9cb4bc; }
+.trust-note { margin-top: 20px; border-left: 3px solid #68c9b8; padding: 10px 14px; background: #132027; color: #bdd0d6; }
+.trust-note p { margin: 5px 0 0; line-height: 1.45; }
+@media (max-width: 560px) { body { padding: 18px; } .widget-card { align-items: flex-start; flex-direction: column; } }

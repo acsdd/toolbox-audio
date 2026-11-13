@@ -1,52 +1,27 @@
-# ArtistWave (toolbox-audio)
+# AudioWave
 
-A standalone Windows player for the Toolbox suite. ArtistWave is a thin native
-Electron shell around the existing **ArtistWave web app** — it loads the remote
-player full-window and adds native mini-player window management, always-on-top,
-uninterrupted audio and safe external-link handling. It was extracted from
-Toolbox desktop so the desktop app carries no audio.
+AudioWave is a Windows music app built around the ArtistWave player. It keeps ArtistWave’s music discovery, listening and library features intact, and adds a host for small installable widgets. The first widget is the Mini Player, which switches the existing window into a compact, always-on-top view while keeping the same playback session.
 
-There is no local player source: the library, queue, YouTube and Studio features
-all live in the remote web app. This repository owns only the native wrapper.
+## First-party widgets
 
-## Toolbox suite
+Open **Widgets → Manage Widgets…** (or press **Ctrl+Shift+W**) to install or remove the Mini Player. Its installed state is saved on this PC. The installed state controls the widget-menu shortcut. The player’s Mini button switches the existing window to 380px compact mode; Full player restores its previous size. Only one player view is visible at a time. Saved playlists can be browsed and played in Mini mode once the matching ArtistWave site update is deployed.
 
-| App | Repo | Role |
-| --- | --- | --- |
-| Toolbox desktop | `toolbox-desktop` | Local-first Windows toolset (no audio) |
-| ArtistWave | `toolbox-audio` | Standalone player shell (this app) |
-| Model Farm panel | `toolbox-mcp` | Local MCP server + ops panel |
-| Toolbox NAS | `toolbox-nas` | NAS companion |
-| Model Farm CLI | `LLamaFarm_Cli_P1` | Command-line model farm |
-| Shared widgets | `toolbox-widgets` | Public MIT core shared by the apps |
+The first version only offers widgets maintained by the AudioWave team. It does not download or run outside widget code. Read [the widget review and safety plan](docs/WIDGETS.md) for the checks required before third-party widgets are considered.
 
 ## Requirements
 
 - Windows 10/11 x64
-- Node.js 22+ (for development and packaging)
-- Network access — the player loads `https://acsdd.github.io/ArtistWave/`.
-  There is **no offline mode**; the remote page must be reachable.
+- Node.js 22+ for development and packaging
+- Internet access — AudioWave loads the maintained ArtistWave player at `https://acsdd.github.io/ArtistWave/`
 
-## Run
+## Run locally
 
 ```bash
-npm install
+npm ci
 npm start
 ```
 
-`npm start` compiles the core and launches the shell.
-
-## Test
-
-```bash
-npm test          # unit tests for the pure logic in src/core.ts
-npm run smoke     # end-to-end smoke against the live remote page
-```
-
-The smoke test boots the real shell, waits for the player, and asserts:
-top-level load (the app is not framed), no preload bridge, sandbox enabled,
-volume command applies, the mini player shrinks the window and stays on top,
-closing the fallback restores the window, and foreign popups are denied.
+The app shell runs locally; the ArtistWave player and its online sources require a working network connection.
 
 ## Package
 
@@ -54,38 +29,22 @@ closing the fallback restores the window, and foreign popups are denied.
 npm run portable
 ```
 
-Builds `dist/ArtistWave-Portable-<version>.exe` locally. The packer stages the
-app outside the workspace and reuses the sibling `../quoder` Electron toolchain
-(`electronDist`) to avoid re-downloading Electron. Pass an alternate toolchain or
-output directory as arguments if needed:
+Builds `dist/AudioWave-Portable-<version>.exe`. The package script uses the Electron toolchain installed with this project. To use another installed toolchain or output folder, pass its path:
 
 ```bash
 node scripts/pack-portable.mjs [toolchain-dir] [output-dir]
 ```
 
-CI builds both the NSIS installer (`ArtistWave-Setup-<version>.exe`) and the
-portable EXE on a `v*` tag — see `.github/workflows/release.yml`.
+CI builds the NSIS installer (`AudioWave-Setup-<version>.exe`) and portable EXE on a `v*` tag.
 
-## Architecture
+## Security and privacy
 
-- **Main-process only.** `scripts/desktop.cjs` is the whole app: one
-  `BrowserWindow` that loads the remote URL top-level. There is no React
-  renderer and no preload bridge.
-- **Pure logic** lives in `src/core.ts` (URL matching, probe parsing, mini-window
-  bounds, snapshot normalization) and is unit-tested.
-- **Sandboxed:** `sandbox: true`, `contextIsolation: true`,
-  `nodeIntegration: false`. The remote page never sees Node or any local API.
-- **Audio keeps playing** when the window is backgrounded
-  (`backgroundThrottling: false`, `autoplayPolicy: 'no-user-gesture-required'`).
-- **Mini player:** the web app's mini-player popup is intercepted and the window
-  shrinks to a compact always-on-top panel; closing the fallback restores it.
-- **Navigation guard:** only the app origin may load in-window; `http(s)` links
-  open in the system browser; every other popup is denied.
+- The main ArtistWave page stays in a sandboxed window with no Node integration or preload bridge.
+- The local widget manager has a narrow bridge for listing, installing, removing and opening the known first-party Mini Player. It cannot read arbitrary files or run commands.
+- Mini Player is served by the maintained ArtistWave site and is allowed only at its exact same-origin player path.
+- The shell handles no credentials and sends no telemetry. The remote player may make the service requests needed for its chosen features.
 
-## Privacy
-
-The shell handles no credentials, no vault data and no telemetry. It only loads
-the public remote player and manages the native window. See [SECURITY.md](SECURITY.md).
+See [SECURITY.md](SECURITY.md) and [docs/WIDGETS.md](docs/WIDGETS.md).
 
 ## License
 

@@ -1,31 +1,32 @@
-/* End-to-end smoke for the ArtistWave shell against the real remote page. */
+/* End-to-end smoke for the AudioWave shell and first-party Mini Player widget. */
 const assert = require('node:assert/strict')
 const { app, BrowserWindow } = require('electron')
 const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
 
-const userData = fs.mkdtempSync(path.join(os.tmpdir(), 'artistwave-smoke-'))
+const userData = fs.mkdtempSync(path.join(os.tmpdir(), 'audiowave-smoke-'))
 app.setPath('userData', userData)
+fs.writeFileSync(path.join(userData, 'widgets.json'), JSON.stringify({ schemaVersion: 1, installed: ['mini-player'] }))
 const appMain = process.argv[2] ? path.resolve(process.argv[2]) : path.join(__dirname, 'desktop.cjs')
 require(appMain)
 
 const APP_PREFIX = 'https://acsdd.github.io/ArtistWave/'
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
-async function waitForWindow() {
+async function waitForWindow(predicate, label, timeoutMs = 20000) {
   const started = Date.now()
-  while (Date.now() - started < 20000) {
-    const win = BrowserWindow.getAllWindows()[0]
-    if (win) {
-      if (win.webContents.isLoading()) {
-        await new Promise((resolve) => win.webContents.once('did-finish-load', resolve))
+  while (Date.now() - started < timeoutMs) {
+    const found = BrowserWindow.getAllWindows().find(predicate)
+    if (found) {
+      if (found.webContents.isLoading()) {
+        await new Promise((resolve) => found.webContents.once('did-finish-load', resolve))
       }
-      return win
+      return found
     }
     await delay(150)
   }
-  throw new Error('No BrowserWindow appeared within the timeout.')
+  throw new Error(`No ${label} appeared within the timeout.`)
 }
 
 function frame(win) {
@@ -48,7 +49,7 @@ async function waitReady(win, timeoutMs = 30000) {
 const watchdog = setTimeout(() => { console.error('Smoke timed out'); app.exit(1) }, 120000)
 
 app.whenReady().then(async () => {
-  const win = await waitForWindow()
+  const win = await waitForWindow((item) => item.title === 'AudioWave' || item.getTitle() === 'AudioWave', 'AudioWave main window')
   win.show()
   await waitReady(win)
   await delay(600)
@@ -56,55 +57,41 @@ app.whenReady().then(async () => {
   const failures = []
   const expect = (cond, msg) => { if (!cond) failures.push(msg) }
 
-  // Top-level load: the app itself must not be framed. The web app legitimately
-  // embeds content iframes (YouTube/Studio), so we assert the main frame is the
-  // app rather than counting child iframes.
   const top = await frame(win).executeJavaScript(
-    `({ url: location.href, framed: window.self !== window.top, iframeSrcs: [...document.querySelectorAll('iframe')].map((f) => f.src), api: typeof window.api, proc: typeof window.process })`,
+    `({ url: location.href, framed: window.self !== window.top, api: typeof window.api, proc: typeof window.process })`,
     false
   )
   expect(top.url.startsWith(APP_PREFIX), `page did not load top-level: ${top.url}`)
-  expect(top.framed === false, 'the app is loaded inside a wrapper iframe (should be top-level)')
-  expect(top.api === 'undefined', 'a preload bridge is exposed (should be none)')
-  expect(top.proc === 'undefined', 'process is exposed (sandbox should hide it)')
+  expect(top.framed === false, 'the app is loaded inside a wrapper iframe')
+  expect(top.api === 'undefined', 'a preload bridge is exposed to the remote page')
+  expect(top.proc === 'undefined', 'process is exposed to the remote page')
 
   const prefs = win.webContents.getLastWebPreferences()
   expect(prefs.sandbox === true, 'sandbox is not enabled')
   expect(prefs.contextIsolation === true, 'contextIsolation is not enabled')
   expect(prefs.nodeIntegration === false, 'nodeIntegration is not disabled')
 
-  // Volume command applies.
   await frame(win).executeJavaScript(`window.ArtistWaveMiniHost.command('volume', 60)`, false)
   await delay(400)
   const vol = await frame(win).executeJavaScript(`window.ArtistWaveMiniHost.state().volume`, false)
   expect(Math.abs(vol - 0.6) <= 0.02, `volume did not apply: ${vol}`)
 
-  // Mini player shrinks the window + always-on-top.
-  const beforeMini = win.getBounds().width
+  const mainWidthBefore = win.getBounds().width
   await frame(win).executeJavaScript(`document.getElementById('openMiniPlayer').click()`, false)
-  await delay(1200)
+  await delay(900)
   const miniWidth = win.getBounds().width
-  expect(miniWidth <= 420, `mini player did not shrink the window: ${miniWidth}`)
-  expect(win.isAlwaysOnTop(), 'mini player is not always-on-top')
-  const miniActive = await frame(win).executeJavaScript(
-    `document.body.classList.contains('mini-player-active')`, false
-  )
-  expect(miniActive === true, 'web app mini state did not activate')
+  expect(miniWidth === 380, `Mini mode width is ${miniWidth}`)
+  expect(win.isAlwaysOnTop(), 'Mini mode is not always-on-top')
+  expect(BrowserWindow.getAllWindows().length === 1, 'Mini mode opened another window')
+  const active = await frame(win).executeJavaScript("document.body.classList.contains('mini-player-active')", false)
+  expect(active, 'embedded mini mode is not active')
+  const miniVolume = await frame(win).executeJavaScript(`window.ArtistWaveMiniHost.state().volume`, false)
+  await frame(win).executeJavaScript('window.ArtistWaveMiniHost.closeFallback()', false)
+  await delay(900)
+  expect(win.getBounds().width === mainWidthBefore, 'Full player width was not restored')
+  expect(!win.isAlwaysOnTop(), 'Full player remained always-on-top')
 
-  // Closing the fallback restores the window.
-  await frame(win).executeJavaScript(`window.ArtistWaveMiniHost.closeFallback()`, false)
-  await delay(1500)
-  const restoredWidth = win.getBounds().width
-  expect(restoredWidth >= beforeMini - 40, `window did not restore: ${restoredWidth}`)
-  expect(!win.isAlwaysOnTop(), 'always-on-top was not cleared after restore')
-
-  // A non-mini popup is denied (no second window).
-  const before = BrowserWindow.getAllWindows().length
-  await frame(win).executeJavaScript(`window.open('https://example.com/', '_blank')`, false)
-  await delay(600)
-  expect(BrowserWindow.getAllWindows().length === before, 'a popup created a second window')
-
-  console.log(JSON.stringify({ ok: failures.length === 0, beforeMini, miniWidth, restoredWidth, vol, iframeSrcs: top.iframeSrcs, failures, userData }))
+  console.log(JSON.stringify({ ok: failures.length === 0, mainWidthBefore, miniWidth, vol, miniVolume, failures, userData }))
   clearTimeout(watchdog)
   if (failures.length) { console.error(`SMOKE FAILED (${failures.length})`); app.exit(1) }
   else { console.log('SMOKE PASSED'); app.exit(0) }

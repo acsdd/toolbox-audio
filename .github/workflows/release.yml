@@ -41,9 +41,9 @@ jobs:
         run: |
           set -euo pipefail
           assets=(
-            dist/ArtistWave-Setup-*.exe
-            dist/ArtistWave-Setup-*.exe.blockmap
-            dist/ArtistWave-Portable-*.exe
+            dist/AudioWave-Setup-*.exe
+            dist/AudioWave-Setup-*.exe.blockmap
+            dist/AudioWave-Portable-*.exe
           )
           gh release create "$GITHUB_REF_NAME" "${assets[@]}" \
-            --title "ArtistWave ${GITHUB_REF_NAME#v}" --generate-notes
+            --title "AudioWave ${GITHUB_REF_NAME#v}" --generate-notes

@@ -1,14 +1,16 @@
 {
   "name": "toolbox-audio",
-  "productName": "ArtistWave",
+  "productName": "AudioWave",
   "version": "0.1.0",
-  "description": "Standalone ArtistWave player — a thin native shell around the ArtistWave web app.",
+  "description": "AudioWave desktop music app with installable first-party widgets.",
   "author": "Alpha Team",
   "license": "MIT",
   "private": true,
   "type": "module",
   "main": "scripts/desktop.cjs",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "start": "npm run build && electron scripts/desktop.cjs",
@@ -24,18 +26,39 @@
     "typescript": "^5.8.3"
   },
   "build": {
-    "appId": "com.alpha.toolbox.audio",
-    "productName": "ArtistWave",
+    "appId": "com.alpha.audiowave",
+    "productName": "AudioWave",
     "copyright": "Copyright © 2026 Alpha Team",
-    "directories": { "output": "dist", "buildResources": "build" },
-    "files": ["dist/**/*.js", "scripts/desktop.cjs", "package.json"],
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**/*.js",
+      "scripts/desktop.cjs",
+      "scripts/widget-manager-preload.cjs",
+      "scripts/widgets.html",
+      "scripts/widget-manager-ui.js",
+      "scripts/widgets.css",
+      "package.json"
+    ],
     "asar": true,
     "compression": "maximum",
     "win": {
       "icon": "build/icon.png",
       "target": [
-        { "target": "nsis", "arch": ["x64"] },
-        { "target": "portable", "arch": ["x64"] }
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
       ]
     },
     "nsis": {
@@ -44,10 +67,12 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "ArtistWave",
+      "shortcutName": "AudioWave",
       "artifactName": "${productName}-Setup-${version}.${ext}",
       "deleteAppDataOnUninstall": false
     },
-    "portable": { "artifactName": "${productName}-Portable-${version}.${ext}" }
+    "portable": {
+      "artifactName": "${productName}-Portable-${version}.${ext}"
+    }
   }
 }

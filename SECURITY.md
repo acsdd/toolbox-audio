@@ -1,34 +1,25 @@
 # Security
 
-ArtistWave (`toolbox-audio`) is a local-only native shell around the public
-ArtistWave web app. It is designed to expose as little as possible to the remote
-page.
+AudioWave is a local Windows music app that hosts the first-party ArtistWave player and a small first-party widget manager. The player remains the app’s core. Third-party widgets are not supported in this version.
 
 ## What the shell does
 
-- Loads `https://acsdd.github.io/ArtistWave/` in a single sandboxed window.
-- Manages the native window (mini-player sizing, always-on-top, restore).
-- Opens `http(s)` links in the system browser; denies every other popup.
-- Keeps audio playing when the window is backgrounded.
+- Loads `https://acsdd.github.io/ArtistWave/` in a sandboxed top-level window.
+- Denies Mini Player popups and resizes the existing window for the embedded compact view.
+- Opens ordinary HTTP(S) links in the system browser and denies other popups.
+- Provides a local widget manager with a small, explicit IPC surface for the first-party catalog.
 
 ## What the shell does not do
 
-- **No credentials.** It never reads, stores or forwards vault entries, API keys,
-  tokens or passwords. The remote page receives no local secrets.
-- **No Node in the page.** `sandbox: true`, `contextIsolation: true`,
-  `nodeIntegration: false`, and no preload bridge. The page cannot reach the file
-  system, child processes or any local API.
-- **No telemetry.** Nothing is collected or sent anywhere by the shell.
-- **No arbitrary navigation.** In-window navigation is restricted to the app
-  origin; foreign origins are blocked or handed to the system browser.
+- **No secrets in the shell.** It does not read or store API keys, passwords or tokens.
+- **No Node access in the remote player.** The page uses `sandbox: true`, `contextIsolation: true`, `nodeIntegration: false`, and no preload bridge.
+- **No arbitrary widget code.** The manager changes a local installed-widget list; it does not fetch executable widget code.
+- **No telemetry.** The shell sends no usage analytics.
 
 ## Trust boundary
 
-The player UI and all playback logic are owned by the remote web app, not this
-repository. The shell trusts that page only as far as the sandbox allows: it can
-render and play audio, but it cannot escape the renderer or touch local data.
+The ArtistWave player is maintained separately and loaded over HTTPS. The Mini Player page is part of that same first-party site and uses its same-origin parent to read and control the existing player session. Third-party widgets would need a separate, isolated runtime with narrower capabilities; the Mini Player’s same-origin connection must never be granted to outside code.
 
 ## Reporting a vulnerability
 
-Please report security issues privately to the maintainers rather than opening a
-public issue. Include reproduction steps and the affected version.
+Please report security issues privately to the maintainers rather than opening a public issue. Include reproduction steps and the affected version.

@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'" />
+  <title>AudioWave Widgets</title>
+  <link rel="stylesheet" href="widgets.css" />
+  <script src="widget-manager-ui.js" defer></script>
+</head>
+<body>
+  <header>
+    <p class="eyebrow">AUDIOWAVE</p>
+    <h1>Widgets</h1>
+    <p class="intro">Add small tools to your music workspace. Your ArtistWave player remains the heart of AudioWave.</p>
+  </header>
+  <main>
+    <div id="widgetList" class="widget-list" aria-live="polite"></div>
+    <p id="managerStatus" class="status" role="status"></p>
+    <section class="trust-note">
+      <strong>First-party widgets</strong>
+      <p>Only widgets maintained by the AudioWave team are available right now. Outside widgets will need a review and safety process before they can be installed.</p>
+    </section>
+  </main>
+</body>
+</html>
