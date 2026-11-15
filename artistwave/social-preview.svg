@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+<defs><linearGradient id="b" x2="1" y2="1"><stop stop-color="#0b1015"/><stop offset="1" stop-color="#24453b"/></linearGradient><radialGradient id="g"><stop stop-color="#b7f56b" stop-opacity=".3"/><stop offset="1" stop-color="#b7f56b" stop-opacity="0"/></radialGradient></defs>
+<rect width="1200" height="630" fill="url(#b)"/><circle cx="930" cy="315" r="380" fill="url(#g)"/>
+<g fill="none" stroke="#c7f595" stroke-opacity=".3"><circle cx="930" cy="315" r="235"/><circle cx="930" cy="315" r="195"/><circle cx="930" cy="315" r="155"/><circle cx="930" cy="315" r="115"/></g><circle cx="930" cy="315" r="75" fill="#b7f56b"/><circle cx="930" cy="315" r="10" fill="#10201e"/>
+<rect x="70" y="76" width="170" height="38" rx="19" fill="#b7f56b" fill-opacity=".16" stroke="#b7f56b"/><text x="88" y="101" fill="#d4ffa4" font-family="Arial,sans-serif" font-size="15" font-weight="bold" letter-spacing="2">MUSIC, YOUR WAY</text>
+<text x="68" y="225" fill="#f4f9f0" font-family="Arial,sans-serif" font-size="78" font-weight="bold">artist<tspan fill="#b7f56b">wave</tspan></text><rect x="72" y="258" width="70" height="6" rx="3" fill="#b7f56b"/>
+<text x="70" y="333" fill="#e5efe8" font-family="Arial,sans-serif" font-size="29">Find your sound.</text><text x="70" y="378" fill="#b9ccc4" font-family="Arial,sans-serif" font-size="25">Build a listening space that feels like yours.</text><text x="72" y="557" fill="#a4beb1" font-family="Arial,sans-serif" font-size="15" letter-spacing="1.4">DISCOVER · PLAYLISTS · LOCAL MUSIC · SHOWDANCE</text>
+</svg>

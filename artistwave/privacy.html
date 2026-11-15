@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0b1015" />
+  <meta name="description" content="How ArtistWave handles browser data, local audio, online providers, YouTube search and optional Google Drive sync." />
+  <title>Privacy · ArtistWave</title>
+  <style>
+    :root{color-scheme:dark;font:16px/1.65 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;background:#0b1015;color:#eff5f4}*{box-sizing:border-box}body{margin:0}.page{max-width:850px;margin:0 auto;padding:36px 22px 70px}a{color:#c5f398}header{border-bottom:1px solid #25323a;padding-bottom:20px;margin-bottom:28px}header a{text-decoration:none;font-weight:800}h1{font-size:clamp(34px,6vw,54px);line-height:1.05;letter-spacing:-2px;margin:25px 0 12px}h2{margin:30px 0 8px;font-size:22px}p,li{color:#c1d0ce}li{margin:7px 0}.updated{color:#91a6a4;font-size:13px}.note{border-left:3px solid #b7f56b;padding:10px 15px;background:#121f23;color:#d6e5dd}
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header><a href="./">◖◗ ArtistWave</a><h1>Privacy</h1><p class="updated">Last updated: November 13, 2026 · Private preview</p></header>
+    <p>ArtistWave is a static browser app. It has no ArtistWave-operated account server or database. This notice describes what the app stores on your device and what happens when you choose online services.</p>
+
+    <h2>Data on your device</h2>
+    <p>ArtistWave stores app preferences and library metadata in your browser, such as favorites, recent items, playlists, routines, theme and provider settings, and selected artwork. If you save a YouTube Data API key or Jamendo client ID, it stays in this browser’s local storage. Anyone who can use this browser profile may be able to inspect locally stored values.</p>
+    <p>When you choose local audio files or a folder, the browser grants access for that selection. Audio files are read and played on your device; they are not uploaded to ArtistWave. Track names and other playlist or routine metadata may be saved locally or included in a sync you choose. File contents and local file paths are not uploaded or synced.</p>
+
+    <h2>Online services</h2>
+    <p>When you search or use online features, ArtistWave sends requests to the relevant service. Depending on what you use, that can include MusicBrainz, Internet Archive, Audius, Jamendo, Wikimedia, Wikimedia Commons, Cover Art Archive, Google, or YouTube. Those providers receive the request and ordinary connection information such as your IP address; their own privacy terms apply. YouTube video playback loads YouTube’s official embedded player.</p>
+    <p>YouTube search uses the YouTube Data API. The search query and your API key are sent to Google as part of the API request. The key is saved only in your browser when you choose Save key; restrict it to ArtistWave’s website in Google Cloud. ArtistWave does not request access to your YouTube account.</p>
+
+    <h2>Optional NAS libraries in AudioWave</h2>
+    <p>The AudioWave desktop app can connect to Navidrome and Plex servers you choose. Credentials are encrypted on your PC using Windows safeStorage. Native media handlers send authentication to your configured server; renderer playlist URLs contain connection and media identifiers instead of credentials. Plex sign-in uses your browser and retains only the selected server token. Disconnecting forgets the saved connection. Library metadata saved to playlists can be included in optional Google Drive sync; audio files and server credentials are not synced.</p>
+    <h2>Optional Google Drive sync</h2>
+    <p>If you choose Google sign-in, ArtistWave asks for sign-in/profile information and access to its private Google Drive app-data area. Favorites, recent listening references, playlists, and routine metadata can sync there. Audio files, OAuth access tokens, and local file paths are not uploaded. Access tokens stay in memory while the page is open. Google’s privacy terms apply to Google account and Drive data.</p>
+
+    <h2>Cookies, analytics and app cache</h2>
+    <p>ArtistWave does not include its own advertising trackers or analytics. Google sign-in and embedded YouTube playback may use Google or YouTube browser storage according to your browser settings. The service worker may cache the app’s same-site interface files for offline loading; it does not cache music streams or Google Drive account data.</p>
+
+    <h2>Your choices</h2>
+    <ul>
+      <li>Use guest mode and skip Google sign-in.</li>
+      <li>Do not save an API key, or remove it from YouTube search setup.</li>
+      <li>Use local audio without enabling online sources.</li>
+      <li>Clear ArtistWave’s site data in your browser to remove locally stored app data. This does not delete data already synced to Google Drive.</li>
+      <li>Stop using an online feature to stop ArtistWave from making new requests to that provider.</li>
+    </ul>
+
+    <p class="note">This notice is for the private preview and will need a final owner review before a public release. It is an explanation of current app behavior, not a promise about third-party services.</p>
+    <h2>Support</h2>
+    <p>Report a problem through <a href="https://github.com/acsdd/ArtistWave/issues">ArtistWave GitHub Issues</a>. Please do not include API keys, passwords, OAuth tokens, private audio, or other sensitive information in a report.</p>
+    <p><a href="./">← Back to ArtistWave</a></p>
+  </main>
+</body>
+</html>

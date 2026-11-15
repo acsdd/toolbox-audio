@@ -2,7 +2,7 @@
 
 ## Current boundary
 
-The first AudioWave version offers only the first-party Mini Player. Its UI lives on the maintained ArtistWave HTTPS site and controls the single, existing playback session through the same-origin parent in an embedded frame. AudioWave denies the popup and resizes its existing window, so full and mini views are mutually exclusive. The local manager stores only whether that widget is installed. It does not download executable code.
+The first AudioWave version offers only the first-party Mini Player. Its UI is bundled with AudioWave under the established ArtistWave HTTPS origin and controls the single, existing playback session through the same-origin parent in an embedded frame. AudioWave denies the popup and resizes its existing window, so full and mini views are mutually exclusive. The local manager stores only whether that widget is installed. It does not download executable code.
 
 The `toolbox-widgets` package used by the wider suite currently provides data, service logic and settings bundles. That format is not a UI-widget package format and does not authorize code execution in AudioWave.
 

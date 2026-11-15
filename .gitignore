@@ -4,3 +4,7 @@ out/
 .archive/
 .tmp/
 *.log
+config/google-oauth.json
+.env
+.env.*
+!.env.example

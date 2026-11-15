@@ -46,9 +46,9 @@ export interface WorkArea {
 }
 
 export function computeMiniBounds(workArea: WorkArea, restore: Rect): Rect {
-  const width = Math.min(380, workArea.width - 24)
-  const height = Math.min(workArea.height, restore.height)
-  const x = Math.max(workArea.x, workArea.x + workArea.width - width - 26)
+  const width = Math.min(380, workArea.width)
+  const height = workArea.height
+  const x = workArea.x + workArea.width - width
   return { x, y: workArea.y, width, height }
 }
 

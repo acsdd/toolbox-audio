@@ -1,19 +1,15 @@
-# Current release verification
+# Release verification — 2026-11-15
 
-## Current source
+## 0.2.0 candidate
 
-Full and Mini now share one window. Mini requests 380px width and always-on-top; Full restores the prior bounds. Smoke assertions now check this behavior instead of expecting a second window. ArtistWave adds saved-playlist browsing and playback to its embedded Mini Player.
+The user accepted the latest Navidrome/Plex preview. Google sign-in and Mini positioning were previously confirmed interactively. Detailed live NAS playback assertions were not recorded; automated provider checks use fixtures.
 
-- AudioWave typecheck and 11 existing unit tests pass.
-- ArtistWave 91 existing tests pass.
-- Current Electron smoke and packaged interactive behavior remain unverified in the restricted agent runner.
-- Real restart persistence, browser/mobile and OAuth checks remain outstanding.
-- Playlist browsing requires the matching ArtistWave site deployment.
+Local validation before release preparation: 92 ArtistWave tests and 20 AudioWave tests passed, along with typecheck and the general, Navidrome and Plex Electron smoke checks. The packaged Plex smoke also passed.
 
-## Earlier build evidence
+The general smoke covers bundled UI, sandbox boundaries, visible controls, single-window Mini, right-edge/full-height positioning, pin toggle and restoration. Provider smoke checks exercise the real library UI and native media handler with generated WAV audio, including playback, seeking, encrypted storage, Mini and disconnect. Unit checks cover authentication cancellation/state/PKCE, pagination, search, restart restoration and rejected media routes.
 
-The owner successfully ran the earlier separate-window smoke, including widget install/remove and saved-settings assertions after correcting a test timing race. The owner also built and launched `dist/verified-2026-11-13/AudioWave-Portable-0.1.0.exe`. That executable predates the single-window change and must be rebuilt before validating the current behavior.
+The source snapshot is bundled; desktop changes do not depend on Pages deployment. Google desktop configuration is injected locally or through the release secret.
 
-No deployment or signing configuration was changed. Generated EXEs are excluded from the commit.
+Remaining release checks: clean-browser/mobile provider flows and hosted Pages review. Windows signing is deferred by the owner. Draft release builds require the desktop OAuth repository secret.
 
-Owner-terminal current single-window smoke PASSED: one window, 1180px full width, 380px Mini width, always-on-top in Mini and original width restored in Full. Current packaged-app and hosted saved-playlist checks remain outstanding. Both commit attempts failed because the configured SSH signing key was unavailable.
+Final 0.2.0 validation: 112 unit tests passed (92 ArtistWave, 20 AudioWave), typecheck and general desktop smoke passed, and Navidrome/Plex smoke checks passed against the packaged ASAR. Desktop OAuth configuration is excluded from Git and the release Actions secret is configured. The owner authorized unsigned Git commits for this update after signing failed.

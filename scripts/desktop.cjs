@@ -1,8 +1,11 @@
 /* AudioWave desktop host for the ArtistWave music app and first-party widgets. */
-const { app, BrowserWindow, Menu, ipcMain, shell } = require('electron')
+const { app, BrowserWindow, Menu, ipcMain, screen, shell, net, session, safeStorage } = require('electron')
 const fs = require('node:fs')
 const { join } = require('node:path')
 const { pathToFileURL } = require('node:url')
+const { signIn } = require('./google-auth.cjs')
+const { createNavidrome } = require('./navidrome.cjs')
+const { createPlex } = require('./plex.cjs')
 
 const APP_NAME = 'AudioWave'
 const MINI_PLAYER_ID = 'mini-player'
@@ -23,7 +26,55 @@ app.setAppUserModelId('com.alpha.audiowave')
 let core
 let mainWindow
 let managerWindow
-let miniWindow
+let authAttempt
+let navidrome
+let plex
+
+for (const operation of ['status', 'connect', 'disconnect', 'albums', 'tracks']) {
+  ipcMain.handle('audiowave:navidrome:' + operation, (event, input) => {
+    requireAuthPage(event)
+    if (!navidrome) throw new Error('Music server connection is not ready.')
+    return navidrome[operation](input)
+  })
+}
+
+for (const operation of ['status', 'connect', 'cancel', 'disconnect', 'albums', 'tracks']) {
+  ipcMain.handle('audiowave:plex:' + operation, (event, input) => {
+    requireAuthPage(event)
+    if (!plex) throw new Error('Plex connection is not ready.')
+    return plex[operation](input)
+  })
+}
+
+function requireAuthPage(event) {
+  if (!mainWindow || mainWindow.isDestroyed() ||
+      event.sender !== mainWindow.webContents ||
+      event.senderFrame !== mainWindow.webContents.mainFrame ||
+      !event.senderFrame.url.startsWith('https://acsdd.github.io/ArtistWave/')) {
+    throw new Error('Sign-in is only available from the AudioWave player.')
+  }
+}
+
+ipcMain.handle('audiowave:auth:sign-in', async (event) => {
+  requireAuthPage(event)
+  if (authAttempt) throw new Error('A sign-in is already open in your browser.')
+  const attempt = new AbortController()
+  authAttempt = attempt
+  try {
+    const token = await signIn({ openExternal: url => shell.openExternal(url), signal: attempt.signal })
+    if (!mainWindow.isDestroyed()) {
+      mainWindow.show()
+      mainWindow.focus()
+    }
+    return token
+  } finally {
+    if (authAttempt === attempt) authAttempt = null
+  }
+})
+ipcMain.handle('audiowave:auth:cancel', event => {
+  requireAuthPage(event)
+  authAttempt?.abort()
+})
 let installedWidgets = new Set()
 const widgetSettingsPath = join(app.getPath('userData'), 'widgets.json')
 
@@ -113,6 +164,7 @@ function rebuildApplicationMenu() {
       label: APP_NAME,
       submenu: [
         { role: 'about' },
+        { label: 'Cancel Google sign-in', click: () => authAttempt?.abort() },
         { type: 'separator' },
         { role: 'quit', label: 'Quit AudioWave' }
       ]
@@ -165,7 +217,9 @@ ipcMain.handle('audiowave:widgets:uninstall', (event, id) => {
     throw new Error('This widget is not in the AudioWave first-party catalog.')
   }
   installedWidgets.delete(id)
-  if (id === MINI_PLAYER_ID && miniWindow && !miniWindow.isDestroyed()) miniWindow.close()
+  if (id === MINI_PLAYER_ID && mainWindow && !mainWindow.isDestroyed()) {
+    void mainWindow.webContents.executeJavaScript('window.ArtistWaveMiniHost?.closeFallback()').catch(() => {})
+  }
   saveInstalledWidgets()
   rebuildApplicationMenu()
   return widgetList()
@@ -192,6 +246,38 @@ if (!app.requestSingleInstanceLock()) {
 
   module.exports = app.whenReady().then(async () => {
     core = await import(pathToFileURL(join(__dirname, '../dist/core.js')).href)
+    // Preserve the existing HTTPS origin and its saved library while serving
+    // the interface shipped in this package. API/media requests use the network.
+    const assets = join(__dirname, '../artistwave')
+    navidrome = createNavidrome({
+      file: join(app.getPath('userData'), 'navidrome.bin'),
+      secureStorage: safeStorage
+    })
+    plex = createPlex({
+      file: join(app.getPath('userData'), 'plex.bin'), secureStorage: safeStorage,
+      openExternal: url => shell.openExternal(url)
+    })
+    if (!fs.existsSync(join(assets, 'index.html'))) throw new Error('Bundled ArtistWave files are missing.')
+    await session.defaultSession.clearStorageData({ storages: ['serviceworkers', 'cachestorage'] })
+    session.defaultSession.protocol.handle('https', request => {
+      const url = new URL(request.url)
+      if (url.origin === 'https://acsdd.github.io' && url.pathname.startsWith('/ArtistWave/__plex/')) {
+        return plex.media(request)
+      }
+      if (url.origin === 'https://acsdd.github.io' && url.pathname.startsWith('/ArtistWave/__navidrome/')) {
+        return navidrome.media(request)
+      }
+      if (url.origin === 'https://acsdd.github.io' && url.pathname.startsWith('/ArtistWave/')) {
+        const filename = url.pathname.slice('/ArtistWave/'.length) || 'index.html'
+        if (!/^[a-zA-Z0-9_-]+\.(html|js|css|png|webmanifest)$/.test(filename)) {
+          return new Response('Not found', { status: 404 })
+        }
+        const file = join(assets, filename)
+        if (!fs.existsSync(file)) return new Response('Not found', { status: 404 })
+        return net.fetch(pathToFileURL(file).href)
+      }
+      return net.fetch(request, { bypassCustomProtocolHandlers: true })
+    })
     installedWidgets = loadInstalledWidgets()
     rebuildApplicationMenu()
 
@@ -205,6 +291,7 @@ if (!app.requestSingleInstanceLock()) {
       backgroundColor: '#0a0c10',
       title: APP_NAME,
       webPreferences: {
+        preload: join(__dirname, 'auth-preload.cjs'),
         contextIsolation: true,
         nodeIntegration: false,
         sandbox: true,
@@ -215,33 +302,14 @@ if (!app.requestSingleInstanceLock()) {
 
     mainWindow.webContents.session.setPermissionRequestHandler((_contents, _permission, callback) => callback(false))
     mainWindow.webContents.session.setPermissionCheckHandler(() => false)
+    mainWindow.webContents.on('did-start-navigation', (_event, _url, inPlace, isMainFrame) => {
+      if (isMainFrame && !inPlace) { authAttempt?.abort(); plex?.cancel() }
+    })
+    mainWindow.once('closed', () => { authAttempt?.abort(); plex?.cancel() })
 
     mainWindow.webContents.setWindowOpenHandler(({ url }) => {
       if (!core.isArtistWaveMiniUrl(url)) openExternal(url)
       return { action: 'deny' }
-    })
-
-    mainWindow.webContents.on('did-create-window', (child, details) => {
-      if (!core.isArtistWaveMiniUrl(details.url) || !installedWidgets.has(MINI_PLAYER_ID)) {
-        child.close()
-        return
-      }
-      miniWindow = child
-      child.setTitle('AudioWave Mini Player')
-      child.setAlwaysOnTop(true)
-      child.setMenu(null)
-      child.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
-      const origin = new URL(core.APP_PREFIX).origin
-      const blockForeignNavigation = (event, url) => {
-        try {
-          if (new URL(url).origin !== origin) event.preventDefault()
-        } catch {
-          event.preventDefault()
-        }
-      }
-      child.webContents.on('will-navigate', blockForeignNavigation)
-      child.webContents.on('will-redirect', blockForeignNavigation)
-      child.on('closed', () => { if (miniWindow === child) miniWindow = null })
     })
 
     const origin = new URL(core.APP_PREFIX).origin
@@ -267,22 +335,33 @@ if (!app.requestSingleInstanceLock()) {
 
     let fullBounds = null
     let probing = false
+    let wasMaximized = false
     const resizeTimer = setInterval(async () => {
       if (probing || !mainWindow || mainWindow.isDestroyed()) return
       probing = true
       try {
-        const mini = await mainWindow.webContents.executeJavaScript("document.body.classList.contains('mini-player-active')")
+        const { mini, pin } = await mainWindow.webContents.executeJavaScript(`(() => {
+          const mini = document.body.classList.contains('mini-player-active')
+          const settings = document.body.dataset
+          if (mini) settings.miniAlwaysOnTop ??= 'true'
+          else delete settings.miniAlwaysOnTop
+          return { mini, pin: settings.miniAlwaysOnTop === 'true' }
+        })()`)
         if (mini && !fullBounds) {
-          fullBounds = mainWindow.getBounds()
+          wasMaximized = mainWindow.isMaximized()
+          fullBounds = mainWindow.getNormalBounds()
+          const { workArea } = screen.getDisplayMatching(mainWindow.getBounds())
+          if (wasMaximized) mainWindow.unmaximize()
           mainWindow.setMinimumSize(320, 460)
-          mainWindow.setBounds({ ...fullBounds, width: 380 })
-          mainWindow.setAlwaysOnTop(true)
+          mainWindow.setBounds(core.computeMiniBounds(workArea, fullBounds))
         } else if (!mini && fullBounds) {
           mainWindow.setAlwaysOnTop(false)
           mainWindow.setBounds(fullBounds)
           mainWindow.setMinimumSize(940, 620)
+          if (wasMaximized) mainWindow.maximize()
           fullBounds = null
         }
+        if (mini && mainWindow.isAlwaysOnTop() !== pin) mainWindow.setAlwaysOnTop(pin)
       } catch {} finally { probing = false }
     }, 200)
     mainWindow.once('closed', () => clearInterval(resizeTimer))

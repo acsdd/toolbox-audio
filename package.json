@@ -1,8 +1,8 @@
 {
   "name": "toolbox-audio",
   "productName": "AudioWave",
-  "version": "0.1.0",
-  "description": "AudioWave desktop music app with installable first-party widgets.",
+  "version": "0.2.0",
+  "description": "AudioWave desktop music player with local, Navidrome and Plex libraries.",
   "author": "Alpha Team",
   "license": "MIT",
   "private": true,
@@ -17,7 +17,8 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "npm run build && node --test \"test/**/*.test.ts\"",
     "smoke": "npm run build && electron scripts/smoke.cjs",
-    "portable": "node scripts/pack-portable.mjs"
+    "portable": "node scripts/pack-portable.mjs",
+    "sync:artistwave": "node scripts/sync-artistwave.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.15.0",
@@ -34,13 +35,19 @@
       "buildResources": "build"
     },
     "files": [
-      "dist/**/*.js",
+      "artistwave/**/*",
+      "scripts/google-auth.cjs",
+      "scripts/navidrome.cjs",
+      "scripts/plex.cjs",
+      "scripts/auth-preload.cjs",
+      "dist/core.js",
       "scripts/desktop.cjs",
       "scripts/widget-manager-preload.cjs",
       "scripts/widgets.html",
       "scripts/widget-manager-ui.js",
       "scripts/widgets.css",
-      "package.json"
+      "package.json",
+      "config/google-oauth.json"
     ],
     "asar": true,
     "compression": "maximum",
@@ -74,5 +81,9 @@
     "portable": {
       "artifactName": "${productName}-Portable-${version}.${ext}"
     }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/acsdd/toolbox-audio.git"
   }
 }

@@ -39,8 +39,8 @@ test('computeMiniBounds caps width at 380 and pins to the right edge', () => {
   const restore = { x: 100, y: 100, width: 1180, height: 780 }
   const b = computeMiniBounds(work, restore)
   assert.equal(b.width, 380)
-  assert.equal(b.height, 780)
-  assert.equal(b.x, 1920 - 380 - 26)
+  assert.equal(b.height, 1040)
+  assert.equal(b.x, 1920 - 380)
   assert.equal(b.y, 0)
 })
 
@@ -49,7 +49,7 @@ test('computeMiniBounds clamps height to the work area and respects offset monit
   const restore = { x: 2000, y: 100, width: 1180, height: 900 }
   const b = computeMiniBounds(work, restore)
   assert.equal(b.height, 720)
-  assert.equal(b.x, 1920 + 1280 - 380 - 26)
+  assert.equal(b.x, 1920 + 1280 - 380)
   assert.equal(b.y, 0)
 })
 
@@ -57,7 +57,7 @@ test('computeMiniBounds never exceeds a narrow work area', () => {
   const work = { x: 0, y: 0, width: 360, height: 640 }
   const restore = { x: 0, y: 0, width: 1180, height: 780 }
   const b = computeMiniBounds(work, restore)
-  assert.equal(b.width, 336)
+  assert.equal(b.width, 360)
   assert.ok(b.x >= 0)
 })
 

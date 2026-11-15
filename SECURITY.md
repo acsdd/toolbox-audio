@@ -1,25 +1,16 @@
 # Security
 
-AudioWave is a local Windows music app that hosts the first-party ArtistWave player and a small first-party widget manager. The player remains the app’s core. Third-party widgets are not supported in this version.
+AudioWave bundles its first-party ArtistWave UI and serves it locally under its established HTTPS origin. Third-party widgets are not supported.
 
-## What the shell does
+- The main renderer is sandboxed, context-isolated and has no Node integration.
+- Narrow IPC methods support Google sign-in, Navidrome and Plex. Calls require the main frame, expected origin/path and main window.
+- Google authorization uses the system browser, PKCE, random state and a temporary loopback callback. Access tokens stay in memory.
+- Navidrome authentication material and Plex server tokens are encrypted with Windows safeStorage. Plex account tokens are discarded after selecting the configured server.
+- Renderer media URLs carry connection/media identifiers; native proxies add credentials and preserve Range requests for seeking. Disconnect removes stored connection credentials.
+- Desktop OAuth build configuration is excluded from Git. Installed-app client credentials are distributed in the package and cannot be treated as confidential.
+- Ordinary HTTP(S) links open in the system browser. Arbitrary widget code and broad filesystem/process bridges are not exposed.
+- The shell sends no telemetry. Selected providers receive the requests needed for their features.
 
-- Loads `https://acsdd.github.io/ArtistWave/` in a sandboxed top-level window.
-- Denies Mini Player popups and resizes the existing window for the embedded compact view.
-- Opens ordinary HTTP(S) links in the system browser and denies other popups.
-- Provides a local widget manager with a small, explicit IPC surface for the first-party catalog.
+Mini shares the existing playback session through its first-party parent frame. Outside code must never receive that same-origin access. See [widget review requirements](docs/WIDGETS.md).
 
-## What the shell does not do
-
-- **No secrets in the shell.** It does not read or store API keys, passwords or tokens.
-- **No Node access in the remote player.** The page uses `sandbox: true`, `contextIsolation: true`, `nodeIntegration: false`, and no preload bridge.
-- **No arbitrary widget code.** The manager changes a local installed-widget list; it does not fetch executable widget code.
-- **No telemetry.** The shell sends no usage analytics.
-
-## Trust boundary
-
-The ArtistWave player is maintained separately and loaded over HTTPS. The Mini Player page is part of that same first-party site and uses its same-origin parent to read and control the existing player session. Third-party widgets would need a separate, isolated runtime with narrower capabilities; the Mini Player’s same-origin connection must never be granted to outside code.
-
-## Reporting a vulnerability
-
-Please report security issues privately to the maintainers rather than opening a public issue. Include reproduction steps and the affected version.
+Report security issues privately to the maintainers with reproduction steps and the affected version.

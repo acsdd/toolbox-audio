@@ -17,11 +17,20 @@ jobs:
         with: { node-version: 22, cache: npm }
       - run: npm ci
       - run: npm run typecheck
-      - run: npm run build
+      - run: npm test
       - uses: actions/cache@v4
         with:
           path: ~\AppData\Local\electron-builder\Cache
           key: electron-builder-win-${{ hashFiles('package-lock.json') }}
+      - name: Prepare desktop OAuth configuration
+        shell: pwsh
+        env:
+          GOOGLE_DESKTOP_OAUTH_JSON: ${{ secrets.GOOGLE_DESKTOP_OAUTH_JSON }}
+        run: |
+          if (-not $env:GOOGLE_DESKTOP_OAUTH_JSON) { throw 'Missing GOOGLE_DESKTOP_OAUTH_JSON release secret' }
+          $oauth = $env:GOOGLE_DESKTOP_OAUTH_JSON | ConvertFrom-Json
+          if (-not $oauth.client_id -or -not $oauth.client_secret) { throw 'Invalid desktop OAuth configuration' }
+          $env:GOOGLE_DESKTOP_OAUTH_JSON | Set-Content -Encoding utf8 config/google-oauth.json
       - name: Package installers
         shell: pwsh
         env:
@@ -34,7 +43,14 @@ jobs:
             Start-Sleep -Seconds 10
           }
           exit 1
-      - name: Publish GitHub release
+      - name: Generate checksums
+        shell: pwsh
+        run: |
+          Get-ChildItem dist/*.exe, dist/*.blockmap | Sort-Object Name | ForEach-Object {
+            $digest = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+            "$digest  $($_.Name)"
+          } | Set-Content -Encoding ascii dist/SHA256SUMS.txt
+      - name: Create draft GitHub release
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -44,6 +60,7 @@ jobs:
             dist/AudioWave-Setup-*.exe
             dist/AudioWave-Setup-*.exe.blockmap
             dist/AudioWave-Portable-*.exe
+            dist/SHA256SUMS.txt
           )
           gh release create "$GITHUB_REF_NAME" "${assets[@]}" \
-            --title "AudioWave ${GITHUB_REF_NAME#v}" --generate-notes
+            --title "AudioWave ${GITHUB_REF_NAME#v}" --generate-notes --draft

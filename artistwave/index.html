@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0b1015" />
+  <meta name="description" content="Explore artists, genres and eras, preview recordings from supported sources, and build playlists with your local music." />
+  <link rel="canonical" href="https://acsdd.github.io/ArtistWave/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="ArtistWave" />
+  <meta property="og:title" content="ArtistWave — Your artist, your station" />
+  <meta property="og:description" content="Explore artists, genres and eras, preview recordings from supported sources, and build playlists with your local music." />
+  <meta property="og:url" content="https://acsdd.github.io/ArtistWave/" />
+  <meta property="og:image" content="https://acsdd.github.io/ArtistWave/social-preview.svg" />
+  <meta property="og:image:type" content="image/svg+xml" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="ArtistWave — Your artist, your station" />
+  <meta name="twitter:description" content="Explore artists, genres and eras, preview recordings from supported sources, and build playlists with your local music." />
+  <meta name="google-oauth-client-id" content="143348900361-co7l5q5b5jl2c51in1p6od1nft592smq.apps.googleusercontent.com" />
+  <title>ArtistWave — Your artist, your station</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+</head>
+<body>
+  <div class="app-shell">
+      <header class="topbar">
+        <nav class="mode-tabs" aria-label="Switch ArtistWave workspace">
+          <button type="button" id="modeAudio" class="mode-tab active" aria-current="page">🎧 Entertainment</button>
+          <button type="button" id="studioNav" class="mode-tab studio-nav">🤸 Showdance</button>
+          <button type="button" id="modeYoutube" class="mode-tab">▶ YouTube</button>
+        </nav>
+        <div class="top-right"><button id="installAppButton" class="install-app-button" type="button" aria-label="Install ArtistWave as an app" title="Install ArtistWave" hidden>⬇ Install</button><button id="themeToggle" class="theme-toggle" type="button" aria-label="Switch to Day theme" aria-pressed="false">☀ Day</button><span class="version">V 3.4</span>
+          <span id="installAppStatus" class="install-app-status" role="status" aria-live="polite" hidden></span>
+          <details class="topbar-account-menu" id="accountMenu">
+            <summary class="topbar-account-toggle" aria-label="Open account and cloud sync settings">☁ Account</summary>
+            <div class="cloud-account" aria-label="Account and private cloud sync">
+        <div class="cloud-account-label">ACCOUNT · OPTIONAL</div>
+        <div id="cloudAccountName" class="cloud-account-name">Guest · saved on this device</div>
+        <button class="nav-item cloud-signin" id="cloudSignIn" type="button">☁ Sign in with Google</button>
+        <div id="cloudAccountActions" class="cloud-account-actions" hidden>
+          <button type="button" id="cloudSyncNow">↻ Sync now</button>
+          <button type="button" id="cloudImportGuest">Import guest favorites</button>
+          <button type="button" id="cloudSignOut">Sign out</button>
+        </div>
+        <details id="cloudSetup" class="cloud-setup">
+          <summary>Google Drive sync setup</summary>
+          <label for="googleClientId">Google OAuth web client ID</label>
+          <input id="googleClientId" type="text" placeholder="…apps.googleusercontent.com" autocomplete="off" spellcheck="false" />
+          <button type="button" id="cloudSaveClient">Save client ID</button>
+          <small>App owner: <a href="https://console.cloud.google.com/auth/clients" target="_blank" rel="noopener noreferrer">create an OAuth web client</a> and enable Google Drive API. Set the authorized JavaScript origin to <code>https://acsdd.github.io</code>. Do not enter a client secret.</small>
+        </details>
+        <div id="cloudStatus" class="cloud-status" role="status" aria-live="polite">Guest mode · cloud sync off</div>
+      </div>
+          </details>
+        </div></header>
+    <aside class="sidebar">
+      <a href="#" class="brand" aria-label="ArtistWave home"><span class="brand-icon">◖◗</span><span>artist<span class="brand-light">wave</span></span></a>
+      <div class="side-label">YOUR LIBRARY</div>
+      <button class="nav-item active" id="discoverNav"><span>◈</span> Discover</button>
+      <button class="nav-item" id="favoritesNav"><span>♡</span> Favorites <span class="nav-count" id="favoriteCount">0</span></button>
+      <button class="nav-item" id="recentNav" type="button"><span>◷</span> Recently Played <span class="nav-count" id="recentCount">0</span></button>
+      <button class="nav-item library-playlists-nav" id="myPlaylistsNav" type="button"><span>♫</span> My Playlists <span class="nav-count" id="myPlaylistsCount">0</span></button>
+      <div class="side-label">MUSIC GENRES</div>
+      <label class="genre-filter-label" for="genreFilter">Filter genres and styles</label>
+      <div class="genre-filter-row"><input id="genreFilter" type="search" placeholder="Search genres or artists…" maxlength="80" autocomplete="off" aria-describedby="genreFilterCount" /><button id="genreFilterClear" type="button" aria-label="Clear genre filter" hidden>×</button></div>
+      <div id="genreFilterCount" class="genre-filter-count" role="status" aria-live="polite"></div>
+      <button id="surpriseArtist" class="surprise-artist" type="button" aria-describedby="surpriseArtistHelp">🎲 Surprise me with an artist</button>
+      <span id="surpriseArtistHelp" class="surprise-help">Uses your genre filter, if entered. Search results depend on available sources.</span>
+      <nav id="genreTree" class="genre-tree" aria-label="Browse music genres, styles and eras"></nav>
+      <div class="side-divider"></div>
+      <details class="sidebar-local-tools" id="localToolsMenu">
+        <summary>📁 Local music</summary>
+                <button class="nav-item folder-nav" id="addFolderNav" type="button"><span>📁</span> Add Music Folder</button>
+        <button class="nav-item folder-reopen" id="reopenFolderNav" type="button" hidden><span>↻</span> Reopen saved folder</button>
+        <button class="nav-item folder-forget" id="forgetFolderNav" type="button" hidden><span>×</span> Forget saved folder</button>
+        <div class="folder-summary" id="folderSummary" aria-live="polite">No local folder selected</div>
+        <button class="nav-item" id="navidromeOpen" type="button" hidden>Navidrome library</button>
+        <button class="nav-item" id="plexOpen" type="button" hidden>Plex library</button>
+      </details>
+      <div class="side-divider"></div>
+      
+      <div class="sidebar-bottom"><span class="icon-spark">✦</span><p>Just the artist you love.<br><span>No algorithm detours.</span></p></div>
+    </aside>
+
+
+
+      <main class="main">
+      <section class="my-playlists-workspace" id="myPlaylistsWorkspace" hidden aria-labelledby="myPlaylistsHeading">
+        <div id="myPlaylistsNotice" role="status" aria-live="polite"></div>
+        <div class="my-playlists-hero">
+          <div class="my-playlists-hero-art" aria-hidden="true"><span>♫</span><span>✦</span><span>◖◗</span></div>
+          <div class="my-playlists-hero-copy">
+            <div class="overline">ARTISTWAVE / YOUR COLLECTION</div>
+            <h1 id="myPlaylistsHeading">Your music.<br><em>Your playlists.</em></h1>
+            <p>Build your own listening collections. Save tracks while exploring, then return whenever the mood strikes.</p>
+          </div>
+          <button id="myPlaylistsCreate" class="my-playlists-create" type="button">＋ New playlist</button>
+        </div>
+        <div class="my-playlists-layout">
+          <section class="my-playlists-library" aria-label="Saved playlists">
+            <div class="my-playlists-section-head"><h2>Your collections</h2><span id="myPlaylistsTotal">0 playlists</span></div>
+            <div id="myPlaylistsCards" class="my-playlists-cards"></div>
+          </section>
+          <section class="my-playlists-detail" id="myPlaylistsDetail" aria-label="Playlist details">
+            <div class="my-playlists-detail-empty" id="myPlaylistsDetailEmpty"><span class="my-playlists-empty-icon">♫</span><h2>A soundtrack for every moment.</h2><p>Create a playlist, then add songs from Discover, Favorites, or Recently Played.</p></div>
+            <div id="myPlaylistsDetailContent" hidden>
+              <div class="my-playlists-detail-head"><div><div class="overline">PERSONAL PLAYLIST</div><h2 id="myPlaylistsDetailName"></h2><p id="myPlaylistsDetailInfo"></p></div>
+                <div class="my-playlists-detail-actions"><button id="myPlaylistsRename" type="button">✎ Rename</button><button id="myPlaylistsDelete" type="button">Delete</button></div></div>
+              <div class="my-playlists-play-actions"><button id="myPlaylistsPlay" type="button">▶ Play playlist</button><button id="myPlaylistsShuffle" type="button">⤨ Shuffle</button></div>
+              <div id="myPlaylistsTracks" class="my-playlists-tracks"></div>
+              <p class="my-playlists-note">Availability depends on your audio sources. Local files stay on your device and may need to be reopened in another session.</p>
+            </div>
+          </section>
+        </div>
+      </section>
+      <section class="youtube-workspace" id="youtubeWorkspace" hidden aria-labelledby="youtubeHeading">
+        <div class="youtube-head"><div class="overline">WATCH MUSIC / VIDEO</div><h2 id="youtubeHeading">▶ YouTube</h2>
+          <p>Watch music videos using YouTube’s official, visible player. The entertainment audio library remains separate.</p></div>
+        <div class="youtube-account">
+          <div class="youtube-account-copy"><strong id="youtubeAccountHeading">YouTube account</strong>
+            <p id="youtubeAccountStatus" role="status" aria-live="polite">YouTube uses its own browser sign-in session.</p></div>
+          <a id="youtubeSignInLink" href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer">Open YouTube / Sign in ↗</a>
+        </div>
+        <div class="youtube-panel">
+          <form id="youtubeLinkForm" class="youtube-link-form">
+            <label for="youtubeUrl">Paste a YouTube video or playlist link</label>
+            <div class="youtube-link-row"><input id="youtubeUrl" type="url" inputmode="url" placeholder="https://www.youtube.com/watch?v=…" autocomplete="off" spellcheck="false" />
+              <button type="submit">▶ Open video</button></div>
+          </form>
+          <form id="youtubeSearchForm" class="youtube-search-form">
+            <label for="youtubeSearch">Find videos on YouTube</label>
+            <div class="youtube-link-row"><input id="youtubeSearch" name="search_query" placeholder="Artist, track, or music video" maxlength="140" />
+              <button type="submit">Search videos</button></div>
+          </form>
+          <details class="youtube-api-setup" id="youtubeApiSetup">
+            <summary>YouTube search setup</summary>
+            <label for="youtubeApiKey">YouTube Data API key</label>
+            <div class="youtube-link-row"><input id="youtubeApiKey" type="password" autocomplete="off" placeholder="Paste your API key" /><button id="youtubeApiSave" type="button">Save key</button></div>
+            <small>Create a key in <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer">Google Cloud Credentials</a>, enable YouTube Data API v3, and restrict the key to your site. The key is stored only in this browser.</small>
+          </details>
+          <div id="youtubeMessage" class="youtube-message" role="status" aria-live="polite">Search here to browse YouTube videos, then play a selection in the official player.</div>
+          <div id="youtubePlayerRegion" class="youtube-player-region" hidden>
+            <iframe id="youtubeFrame" title="Official YouTube video player" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+          </div>
+          <div id="youtubeSearchResults" class="youtube-search-results" aria-label="YouTube search results" aria-live="polite"></div>
+          <p class="youtube-disclaimer">Videos must permit embedding. Playback uses YouTube’s official player, not extracted audio; YouTube Premium does not unlock a separate audio-only stream here.</p>
+        </div>
+      </section>
+      <section class="studio-workspace" id="studioWorkspace" hidden aria-labelledby="studioHeading">
+        <div class="studio-intro">
+          <div><div class="overline">ARTISTWAVE 3.0 / GYM WORKSPACE</div><h2 id="studioHeading">🤸 Showdance Studio</h2>
+            <p>Plan and rehearse gymnastics and dance competition routines. Set your gym’s own time limit; rules vary by discipline and event.</p></div>
+          <button type="button" id="studioClose">← Back to music</button>
+        </div>
+        <div class="studio-layout">
+          <div class="studio-main">
+            <section class="studio-panel" aria-label="Routine setup">
+              <div class="studio-panel-heading"><h3>Routine details</h3><button type="button" id="studioNew">+ New routine</button></div>
+              <label for="studioRoutineSelect">Saved routine</label>
+              <select id="studioRoutineSelect" aria-label="Choose saved routine"></select>
+              <div class="studio-input-grid">
+                <label>Routine name<input id="studioName" maxlength="90" placeholder="Floor final – Team A" /></label>
+                <label>Athlete / team<input id="studioAthlete" maxlength="90" placeholder="Athlete or group" /></label>
+                <label>Discipline<select id="studioDiscipline"><option>Artistic gymnastics</option><option>Rhythmic gymnastics</option><option>Acrobatic gymnastics</option><option>Dance / showdance</option><option>Group gymnastics</option><option>Other gym performance</option></select></label>
+                <label>Target duration (seconds)<input id="studioTarget" type="number" min="15" max="900" step="1" value="90" /></label>
+              </div>
+              <div class="studio-input-actions"><button type="button" id="studioSave">Save routine</button><button type="button" id="studioDelete">Delete routine</button></div>
+              <p class="studio-caption">Duration is a planning target, not a claim about competition regulations. Ask the event organizer for the correct limit.</p>
+            </section>
+            <section class="studio-panel" aria-label="Routine music">
+              <div class="studio-panel-heading"><h3>Music timeline</h3><span id="studioTotal" class="studio-duration">0:00 / 1:30</span></div>
+              <div class="studio-duration-track"><div id="studioDurationFill"></div></div>
+              <p id="studioTimingStatus" class="studio-caption">Add music from the active playlist or your favorites.</p>
+              <div class="studio-add-row">
+                <select id="studioTrackSelect" aria-label="Choose a track to add"></select>
+                <button type="button" id="studioAddTrack">+ Add track</button>
+              </div>
+              <div id="studioSegments" class="studio-segments" aria-live="polite"></div>
+              <div class="studio-practice">
+                <button type="button" id="studioPlay">▶ Rehearse routine</button>
+                <button type="button" id="studioStop">■ Stop</button>
+                <span id="studioPlaybackStatus" role="status" aria-live="polite">Ready to rehearse</span>
+              </div>
+              <p class="studio-caption">Use start/end times to preview sections in order. Browser seeking depends on the audio source. This is a rehearsal planner, not a downloadable audio editor.</p>
+            </section>
+          </div>
+          <aside class="studio-side">
+            <section class="studio-panel"><h3>Gym routine cues</h3><p>For each music section, add a cue such as <strong>Entrance</strong>, <strong>Tumbling pass</strong>, <strong>Formation change</strong>, or <strong>Final pose</strong>.</p>
+              <p>Sections play sequentially, with their chosen start/end times. Keep a locally available copy of your competition music and confirm performance rights.</p></section>
+            <section class="studio-panel"><h3>Saving & privacy</h3><p>Guest routines stay on this browser. With Google sign-in, online track references and routine metadata synchronize to your private Drive app data.</p><p>Local audio files are never uploaded. Reopen their folder on other devices to rehearse local segments.</p></section>
+          </aside>
+        </div>
+        <audio id="studioAudio" preload="metadata"></audio>
+      </section>
+
+      <section class="hero" id="artistWaveHero"><div class="hero-copy"><div class="eyebrow"><span class="little-star">✳</span> THE MUSIC IS YOURS TO CHOOSE</div><h1>One artist.<br><em>Every track.</em></h1><p>No noise. No distractions. Type an artist or band and build a listening session around them.</p></div><div class="hero-art" aria-hidden="true"><div class="orb orb-a"></div><div class="orb orb-b"></div><div class="vinyl"><div class="vinyl-ring ring-one"></div><div class="vinyl-ring ring-two"></div><div class="vinyl-ring ring-three"></div><div class="record-label"><div class="record-hole"></div></div></div><div class="star star-one">✳</div><div class="star star-two">✧</div></div></section>
+
+      <section class="search-section" id="discoverSection"><div class="section-heading"><div><div class="overline">01 / FIND YOUR SOUND</div><h2>Who are we listening to?</h2></div><span class="section-aside">SEARCH BY ARTIST OR BAND</span></div><form id="searchForm" class="search-form"><label class="search-box" for="artistInput"><span class="search-icon">⌕</span><input id="artistInput" name="artist" type="search" placeholder="e.g. Grateful Dead, Nina Simone, Miles Davis..." autocomplete="off" maxlength="100" required /><span class="key-hint">ENTER ↵</span></label><button class="primary-button" id="searchButton" type="submit">Find music <span>↗</span></button></form><div class="search-options"><label class="source-select-label" for="sourceMode"><span>Music sources</span><select id="sourceMode" aria-label="Playlist source"><option value="both" selected>Local + online</option><option value="local">Local only</option><option value="online">Online only</option></select></label><label class="checkbox"><input type="checkbox" id="includeLive" checked/><span>Include live recordings</span></label><span>Artist matches: MusicBrainz · Audio: selected providers</span></div><fieldset class="provider-panel" id="providerPanel"><legend>Online audio providers</legend>
+  <label class="provider-choice"><input type="checkbox" id="providerArchive" checked /><span>Internet Archive</span></label>
+  <label class="provider-choice"><input type="checkbox" id="providerAudius" checked /><span>Audius</span></label>
+  <label class="provider-choice"><input type="checkbox" id="providerJamendo" /><span>Jamendo</span></label>
+  <label class="provider-key" for="jamendoClientId"><span>Jamendo client ID</span><input type="text" id="jamendoClientId" inputmode="text" autocomplete="off" spellcheck="false" placeholder="Add your Jamendo API client ID" aria-describedby="jamendoHelp" /></label>
+  <button class="provider-save" id="saveJamendoId" type="button">Save ID</button>
+  <small id="jamendoHelp">Optional: <a href="https://devportal.jamendo.com/" target="_blank" rel="noopener noreferrer">request your Jamendo client ID</a>. No password or API secret needed.</small>
+</fieldset>
+<div id="matchPanel" class="match-panel" hidden><div class="match-top"><div><div class="overline">CHOOSE THE RIGHT MATCH</div><h3 id="matchHeading">Search matches</h3></div><span id="matchSummary"></span></div><div id="matchList" class="match-list"></div></div></section>
+
+      <section class="genre-results" id="genreResults" hidden>
+        <div class="section-heading"><div><div class="overline">BROWSE THE MUSIC</div><h2 id="genreResultsHeading">Explore music styles</h2></div><span id="genreResultsCount" class="section-aside"></span></div>
+        <p id="genreResultsDescription" class="status-message">Choose an artist to load their playlist.</p>
+        <div id="genreArtistList" class="genre-artist-list"></div>
+      </section>
+      <nav class="album-jump" id="albumJump" aria-label="Album navigation" hidden><label for="albumJumpSelect">Jump to album</label><select id="albumJumpSelect" aria-label="Jump to album"><option value="">Choose an album</option></select><button id="albumFoldAll" class="album-fold-all" type="button" aria-label="Collapse all albums">▴ Collapse all</button></nav>
+      <section class="playlist-section" id="playlistSection"><div class="section-heading playlist-title"><div><div class="overline" id="playlistOverline">02 / YOUR PLAYLIST</div><h2 id="playlistHeading">Your next obsession starts here.</h2></div><div class="playlist-actions"><label class="checkbox catalog-toggle"><input type="checkbox" id="showUnavailable"/><span>Show titles without audio</span></label><button class="text-button queue-toggle-button" id="smartQueueToggle" type="button" aria-controls="smartQueuePanel" aria-expanded="false">☷ Queue <span id="smartQueueCount">0</span></button><button class="text-button" id="shuffleAll" disabled>⤨ Shuffle all</button><button class="text-button" id="clearList" disabled>× Clear</button></div></div><div id="statusMessage" class="status-message" role="status" aria-live="polite">Search for an artist to discover playable recordings, or add tracks from your computer below.</div><div class="track-table-head"><span>TRACK</span><span>RECORDING</span><span>SOURCE</span><span></span></div><div id="trackList" class="track-list"><div class="empty-state"><div class="empty-icon">♫</div><strong>It's quiet in here.</strong><span>Search for an artist above to start the music.</span></div></div><a id="externalSearch" class="external-search" href="#" target="_blank" rel="noopener noreferrer" hidden></a><button class="load-more" id="loadMore" hidden>Load more recordings ↓</button></section>
+
+      <section class="smart-queue-panel" id="smartQueuePanel" hidden aria-labelledby="smartQueueHeading">
+        <div class="smart-queue-head">
+          <div><div class="overline">NEXT ON DECK</div><h2 id="smartQueueHeading">Your listening queue</h2><p>Play Next and Add to Queue won't change your saved playlists.</p></div>
+          <div class="smart-queue-head-actions"><button id="smartQueueClear" type="button">Clear queue</button><button id="smartQueueClose" type="button" aria-label="Close queue">×</button></div>
+        </div>
+        <div id="smartQueueList" class="smart-queue-list"></div>
+        <p id="smartQueueStatus" role="status" aria-live="polite" class="smart-queue-status"></p>
+      </section>
+      <section class="local-section"><div class="local-left"><div class="overline">03 / YOUR OWN COLLECTION</div><h2>Bring your music along.</h2><p>Add files or select a music folder from the sidebar. ArtistWave scans supported files and subfolders on your device (where permitted). Nothing is uploaded. Folder access is requested only when you select it.</p></div><div class="file-drop" id="fileDrop" tabindex="0" role="button" aria-label="Add local audio files"><span class="upload-icon">↥</span><strong>Drop audio files here</strong><span>or <u>browse files</u> · MP3, FLAC, WAV, OGG, M4A</span><input id="fileInput" type="file" accept="audio/*,.flac,.m4a" multiple hidden /></div></section>
+      <footer class="footer"><span>ARTISTWAVE © 2026</span><span>Built for the love of listening.</span><a href="./privacy.html">Privacy</a><a href="https://github.com/acsdd/ArtistWave/issues" target="_blank" rel="noopener noreferrer">Support ↗</a><a href="https://archive.org" target="_blank" rel="noopener noreferrer">Internet Archive ↗</a></footer>
+    </main>
+  </div>
+
+  <div class="player"><button id="openMiniPlayer" class="open-mini-player" type="button" aria-label="Open mini player window" title="Open mini player">▣ Mini player</button><div class="now-playing"><div class="mini-art" id="miniArt">♫</div><div class="now-text"><strong id="nowTitle">Nothing playing yet</strong><span id="nowArtist">Find your next favorite</span></div><button id="favoriteCurrent" class="heart-button" aria-label="Save current track" disabled>♡</button><button id="playlistSaveCurrent" class="playlist-save-current" type="button" aria-label="Add current track to playlist" title="Add to playlist" disabled>＋</button></div><div class="playback"><div class="play-controls"><button id="shuffleButton" title="Shuffle" aria-label="Toggle shuffle">⤨</button><button id="previousButton" title="Previous" aria-label="Previous track">⏮</button><button id="playButton" class="play-main" title="Play" aria-label="Play">▶</button><button id="nextButton" title="Next" aria-label="Next track">⏭</button><button id="repeatButton" title="Repeat: off" aria-label="Change repeat mode">↻</button></div><div class="timeline"><span id="currentTime">0:00</span><input id="seekBar" type="range" min="0" max="1000" value="0" aria-label="Seek playback"/><span id="duration">0:00</span></div></div><div class="player-right"><span class="volume-icon">◖))</span><input id="volumeBar" type="range" min="0" max="100" value="75" aria-label="Volume"/><span class="source-badge" id="playingSource">READY</span></div></div>
+  <div id="miniPlayerFallback" class="mini-player-fallback" hidden aria-label="Mini player panel"><iframe id="miniPlayerFallbackFrame" title="Mini music player"></iframe></div>
+  <dialog id="playlistDialog" class="playlist-dialog" aria-labelledby="playlistDialogTitle">
+    <form id="playlistDialogForm" method="dialog">
+      <div class="playlist-dialog-mark">♫</div>
+      <h2 id="playlistDialogTitle">New playlist</h2>
+      <p id="playlistDialogHint">Give this collection a name you'll remember.</p>
+      <label id="playlistNameLabel" for="playlistName">Playlist name</label>
+      <input id="playlistName" type="text" maxlength="80" autocomplete="off" required placeholder="e.g. Midnight Drive" />
+      <div class="playlist-dialog-actions"><button id="playlistDialogCancel" type="button">Cancel</button><button id="playlistDialogSave" type="submit">Create playlist</button></div>
+    </form>
+  </dialog>
+  <dialog id="playlistPickerDialog" class="playlist-dialog" aria-labelledby="playlistPickerTitle">
+    <div class="playlist-dialog-mark">＋</div><h2 id="playlistPickerTitle">Add to playlist</h2>
+    <p id="playlistPickerTrack"></p>
+    <div id="playlistPickerChoices" class="playlist-picker-choices"></div>
+    <div class="playlist-dialog-actions"><button id="playlistPickerCancel" type="button">Close</button><button id="playlistPickerCreate" type="button">＋ New playlist</button></div>
+  </dialog>
+  <dialog id="artDialog" class="art-dialog" aria-labelledby="artDialogHeading">
+    <form method="dialog" id="artDialogForm">
+      <h2 id="artDialogHeading">Choose artwork</h2>
+      <p id="artDialogArtist" class="art-dialog-info"></p>
+      <label for="artUrl">Image URL (photo, logo, album or live show)</label>
+      <input id="artUrl" type="url" placeholder="https://example.com/artist.jpg" />
+      <div class="art-dialog-actions"><button type="button" id="artSaveUrl" class="primary-button">Use image URL</button><label class="art-upload">Or upload an image<input id="artUpload" type="file" accept="image/*" hidden /></label></div>
+      <div class="art-dialog-actions art-dialog-bottom"><button type="button" id="artReset">Restore automatic image</button><button type="submit">Cancel</button></div>
+      <p id="artDialogError" role="status"></p>
+    </form>
+  </dialog>
+  <input id="folderInput" type="file" webkitdirectory directory multiple hidden />
+  <script src="navidrome.js" defer></script>
+  <audio id="audio" preload="metadata"></audio>
+  <script src="https://accounts.google.com/gsi/client" defer></script>
+  <script src="cloud-sync.js" defer></script>
+  <script src="app.js" defer></script>
+  <script src="studio.js" defer></script>
+  <script src="navigation.js" defer></script>
+  <script src="playlists.js" defer></script>
+  <script src="mini-player-host.js" defer></script>
+  <script src="theme.js" defer></script>
+  <script src="install.js" defer></script>
+</body>
+</html>

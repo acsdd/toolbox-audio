@@ -1,50 +1,48 @@
 # AudioWave
 
-AudioWave is a Windows music app built around the ArtistWave player. It keeps ArtistWave’s music discovery, listening and library features intact, and adds a host for small installable widgets. The first widget is the Mini Player, which switches the existing window into a compact, always-on-top view while keeping the same playback session.
+AudioWave is a self-contained Windows music player with a bundled ArtistWave interface, local-file playlists, online discovery, and optional Navidrome and Plex libraries. Version **0.2.0** bundles ArtistWave **3.4**. See [release notes](CHANGELOG.md).
 
-## First-party widgets
+## Use
 
-Open **Widgets → Manage Widgets…** (or press **Ctrl+Shift+W**) to install or remove the Mini Player. Its installed state is saved on this PC. The installed state controls the widget-menu shortcut. The player’s Mini button switches the existing window to 380px compact mode; Full player restores its previous size. Only one player view is visible at a time. Saved playlists can be browsed and played in Mini mode once the matching ArtistWave site update is deployed.
+Run the portable EXE or install the Windows x64 setup package. End users do not need Node.js or other runtimes. Internet access is needed for online sources and sign-in; NAS playback needs connectivity to your server.
 
-The first version only offers widgets maintained by the AudioWave team. It does not download or run outside widget code. Read [the widget review and safety plan](docs/WIDGETS.md) for the checks required before third-party widgets are considered.
+Under **Local music**, choose Navidrome or Plex. Navidrome accepts your server URL and account credentials. Plex opens your browser for account authorization and then offers the server's music libraries. Browse albums, search, play tracks and save them to playlists.
 
-## Requirements
+The player's Mini button switches the same playback session into a full-height, 380px window at the right screen edge. The visible pin button toggles always-on-top. Select saved playlists directly in Mini; Full restores the previous window. The optional first-party widget manager controls the menu shortcut. No third-party plugins are supported.
 
-- Windows 10/11 x64
-- Node.js 22+ for development and packaging
-- Internet access — AudioWave loads the maintained ArtistWave player at `https://acsdd.github.io/ArtistWave/`
+## Development
 
-## Run locally
+Requires Node.js 22+ on Windows for the desktop checks and packaging.
 
-```bash
+```sh
 npm ci
 npm start
+npm run typecheck
+npm test
+npm run smoke
 ```
 
-The app shell runs locally; the ArtistWave player and its online sources require a working network connection.
+Copy `config/google-oauth.example.json` to `config/google-oauth.json` and supply a Google Desktop OAuth client's configuration for real sign-in. This file is ignored by Git and bundled at packaging time. Tests use injected fixtures. Installed-app credentials can be extracted from a distributed executable; they are not a confidential server credential.
 
-## Package
+The committed `artistwave/` snapshot is the runtime UI. After updating the sibling ArtistWave checkout, run `npm run sync:artistwave` and commit the refreshed snapshot. A deployed website update is not needed for desktop UI changes.
 
-```bash
+## Packaging
+
+```sh
 npm run portable
+# Optional installed toolchain and new output folder:
+node scripts/pack-portable.mjs . dist/release-0.2.0
 ```
 
-Builds `dist/AudioWave-Portable-<version>.exe`. The package script uses the Electron toolchain installed with this project. To use another installed toolchain or output folder, pass its path:
+The package includes Electron, application code, ArtistWave and desktop OAuth configuration. It refuses to overwrite an existing portable EXE. Previous build artifacts are excluded.
 
-```bash
-node scripts/pack-portable.mjs [toolchain-dir] [output-dir]
-```
-
-CI builds the NSIS installer (`AudioWave-Setup-<version>.exe`) and portable EXE on a `v*` tag.
+The `v*` tag workflow builds an installer and portable EXE, generates SHA256 checksums, and creates a **draft** GitHub release. Configure the repository Actions secret `GOOGLE_DESKTOP_OAUTH_JSON` with the same JSON before triggering a release build. Windows previews are currently unsigned.
 
 ## Security and privacy
 
-- The main ArtistWave page stays in a sandboxed window with no Node integration or preload bridge.
-- The local widget manager has a narrow bridge for listing, installing, removing and opening the known first-party Mini Player. It cannot read arbitrary files or run commands.
-- Mini Player is served by the maintained ArtistWave site and is allowed only at its exact same-origin player path.
-- The shell handles no credentials and sends no telemetry. The remote player may make the service requests needed for its chosen features.
+The player is sandboxed with context isolation and no Node integration. Narrow, main-frame-validated bridges expose Google sign-in and library operations. Google tokens stay in memory; NAS connection credentials are encrypted with Windows safeStorage. Native handlers attach credentials to media requests so playlist URLs contain only opaque connection/media IDs. Disconnect forgets the saved connection.
 
-See [SECURITY.md](SECURITY.md) and [docs/WIDGETS.md](docs/WIDGETS.md).
+The bundled UI uses the existing ArtistWave HTTPS origin to preserve local library storage. The shell sends no telemetry. Chosen providers receive requests required for playback and account features. See [SECURITY.md](SECURITY.md), [verification](docs/VERIFICATION.md), and [widget boundaries](docs/WIDGETS.md).
 
 ## License
 
