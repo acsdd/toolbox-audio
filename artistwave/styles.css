@@ -869,7 +869,7 @@ body[data-mode="audio"] .app-shell{
 :root[data-theme="day"]{
   color-scheme:light;
   --bg:#f6f8f1;--panel:#fffefa;--line:#b9cbb9;
-  --text:#23372e;--muted:#60786a;--accent:#376b3a;
+  --text:#23372e;--muted:#526b5c;--accent:#376b3a;
 }
 [data-theme="day"] body{background:var(--bg);color:var(--text)}
 [data-theme="day"] .app-shell>.topbar{background:#fffefa;border-bottom-color:#d3e1d3;box-shadow:0 5px 18px #43594015}
@@ -929,8 +929,33 @@ body[data-mode="audio"] .app-shell{
 [data-theme="day"] .track-row.active{background:#e2efdc}
 [data-theme="day"] .track-info strong,[data-theme="day"] .album-heading{color:#243c2e}
 [data-theme="day"] .track-info small,[data-theme="day"] .track-source,
-[data-theme="day"] .album-count,[data-theme="day"] .recording-name{color:#587462}
-[data-theme="day"] .album-group,[data-theme="day"] .album-header{border-color:#d4e2d2}
+[data-theme="day"] .album-count,[data-theme="day"] .recording-name{color:#4d6856}
+[data-theme="day"] .album-group{background:#fffefa;border-color:#c1d1c2}
+[data-theme="day"] .album-header{background:#eaf1e5;border-color:#c1d1c2}
+[data-theme="day"] .album-play-button{background:#376b3a;color:#fff}
+[data-theme="day"] .album-play-button:hover{background:#28562e}
+[data-theme="day"] .album-year{color:#4d6554;border-color:#a8bda9}
+[data-theme="day"] .album-jump{background:#eaf1e5;border-color:#b9cbb9}
+[data-theme="day"] .lyrics-link{background:#f4f8ef;color:#315b37;border-color:#9eb49c}
+[data-theme="day"] .lyrics-link:hover{background:#deecd7;color:#234a2b}
+[data-theme="day"] .catalog-toggle{color:#4d6856}
+[data-theme="day"] .unavailable-row{background:#f4f1e8;border-left-color:#967743}
+[data-theme="day"] .unavailable-mark,[data-theme="day"] .unavailable-row .recording-name{color:#755b32}
+[data-theme="day"] .sidebar .genre-tree{background:#eef3e9;border-color:#c1d1c2;scrollbar-color:#91aa90 #eef3e9}
+[data-theme="day"] .sidebar-local-tools{background:#f0f5eb;border-color:#bdcfbb}
+[data-theme="day"] .sidebar-local-tools>summary{color:#294d34}
+[data-theme="day"] .sidebar-local-tools>summary::after{color:#4f6c53}
+[data-theme="day"] .sidebar-local-tools .folder-summary{color:#526c58}
+[data-theme="day"] .sidebar .folder-forget{color:#944432}
+[data-theme="day"] .genre-filter-label{color:#526c58}
+[data-theme="day"] #navidromeStatus.error,[data-theme="day"] .cloud-status.error{color:#a03125}
+[data-theme="day"] .navidrome-dialog button{background:#e4efdc;color:#294d34;border-color:#a8bfa3}
+[data-theme="day"] .navidrome-dialog button:hover:not(:disabled){background:#d5e6ca}
+[data-theme="day"] .navidrome-dialog #navidromeConnectButton,
+[data-theme="day"] .navidrome-dialog #navidromePlayAlbum{background:#376b3a;color:#fff}
+[data-theme="day"] .navidrome-dialog #navidromeConnectButton:hover,
+[data-theme="day"] .navidrome-dialog #navidromePlayAlbum:hover{background:#28562e}
+[data-theme="day"] :is(button,a,input,select,summary):focus-visible{outline:2px solid #376b3a;outline-offset:3px}
 [data-theme="day"] .track-actions button:not(.heart-button),
 [data-theme="day"] .track-add-playlist,[data-theme="day"] .playlist-save-current{background:#e7f2dc;color:#295f33;border-color:#a8c6a2}
 [data-theme="day"] .player{background:#fffefa;color:#284034;border-top-color:#b4ccb8;box-shadow:0 -8px 28px #39583c1c}
