@@ -1,5 +1,7 @@
 # AudioWave
 
+**Status:** `external_UAT` — released for acceptance testing outside the team. ![status](https://img.shields.io/badge/status-external_UAT-9cf37e?style=flat-square)
+
 AudioWave is a self-contained Windows music player with a bundled ArtistWave interface, local-file playlists, online discovery, and optional Navidrome and Plex libraries. Version **0.2.0** bundles ArtistWave **3.4**. See [release notes](CHANGELOG.md).
 
 ## Use
