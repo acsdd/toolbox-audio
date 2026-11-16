@@ -2,6 +2,8 @@
 
 **Status:** `external_UAT` — released for acceptance testing outside the team. ![status](https://img.shields.io/badge/status-external_UAT-9cf37e?style=flat-square)
 
+**Download:** [AudioWave 0.2.0](https://github.com/acsdd/toolbox-audio/releases/tag/v0.2.0) — [Setup (installer, .exe)](https://github.com/acsdd/toolbox-audio/releases/download/v0.2.0/AudioWave-Setup-0.2.0.exe) · [Portable (.exe)](https://github.com/acsdd/toolbox-audio/releases/download/v0.2.0/AudioWave-Portable-0.2.0.exe) · [SHA256SUMS.txt](https://github.com/acsdd/toolbox-audio/releases/download/v0.2.0/SHA256SUMS.txt)
+
 **Site:** <https://acsdd.github.io/toolbox-audio/> — The project landing page.
 
 AudioWave is a self-contained Windows music player with a bundled ArtistWave interface, local-file playlists, online discovery, and optional Navidrome and Plex libraries. Version **0.2.0** bundles ArtistWave **3.4**. See [release notes](CHANGELOG.md).
