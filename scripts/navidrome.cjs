@@ -35,7 +35,7 @@ function createNavidrome({ file, secureStorage, fetchImpl = fetch }) {
     }
   }
   const status = () => ({
-    connected: Boolean(connection), url: connection?.url || '',
+    id: connection?.id || '', connected: Boolean(connection), url: connection?.url || '',
     username: connection?.username || '', error: storageError
   })
   function endpoint(config, name, params = {}) {
@@ -117,7 +117,7 @@ function createNavidrome({ file, secureStorage, fetchImpl = fetch }) {
       return {
         albums: albums.map(item => ({
           id: String(item.id), name: String(item.name || item.title || 'Untitled album'),
-          artist: String(item.artist || 'Unknown artist'), count: Number(item.songCount) || 0,
+          year: Number(item.year)||0, artist: String(item.artist || 'Unknown artist'), count: Number(item.songCount) || 0,
           artwork: item.coverArt ? mediaUrl(config, 'cover', item.coverArt) : ''
         })),
         more: albums.length === 40

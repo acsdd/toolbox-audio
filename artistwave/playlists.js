@@ -6,7 +6,7 @@
   const $=id=>document.getElementById(id);
   const STORE='artistwave:custom-playlists';
   const norm=x=>String(x||'').normalize('NFKD').toLowerCase().replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
-  const identity=t=>norm(t.artist)+'|'+norm(t.title);
+  const identity=t=>t.source==='LOCAL'?'LOCAL|'+(t.localKey||[t.artist,t.title,t.collection].map(norm).join('|')):String(t.source)+'|'+(t.url||t.id||[t.artist,t.title,t.collection].map(norm).join('|'));
   const cleanTrack=t=>{
     if(!t||typeof t!=='object'||!t.title||!t.artist)return null;
     const source=String(t.source||'LOCAL').slice(0,30);
@@ -15,6 +15,7 @@
     if(!local&&!url)return null;
     return {
       id:local?'':String(t.id||'').slice(0,250),
+      ...(local&&/^[a-f0-9]{64}$/.test(t.localKey||'')?{localKey:t.localKey}:{}),
       title:String(t.title).slice(0,250),artist:String(t.artist).slice(0,250),
       collection:String(t.collection||'').slice(0,250),
       albumKind:t.albumKind==='album'?'album':t.albumKind==='collection'?'collection':'single',
@@ -127,6 +128,7 @@
     }
   }
   function resolveTrack(track){
+    if(window.ArtistWaveLibraryData)return window.ArtistWaveLibraryData.resolve(track,window.ArtistWaveLibrary?.getAvailable?.()||[],window.ArtistWaveConnections||{});
     if(track.source!=='LOCAL')return /^https:\/\//.test(track.url||'')?track:null;
     const candidates=window.ArtistWaveLibrary?.getAvailable?.()||[];
     const found=candidates.find(t=>t.source==='LOCAL'&&t.url&&identity(t)===identity(track));
@@ -189,15 +191,17 @@
       const number=newNode('span','my-playlists-track-number',String(i+1).padStart(2,'0'));
       const details=newNode('div','my-playlists-track-info');
       details.append(newNode('strong','',t.title),newNode('small','',t.artist));
-      const badge=newNode('span','my-playlists-track-badge',ready?t.source:'RELINK');
-      if(!ready)badge.title='Local audio unavailable on this device. Reopen your music folder.';
+      const badge=newNode('span','my-playlists-track-badge',ready?t.source:(t.source==='LOCAL'?'RELINK':'CONNECT'));
+      if(!ready)badge.title=t.source==='LOCAL'?'Local audio unavailable or ambiguous. Reopen your music folder.':'Reconnect the saved '+t.source+' server in My Music.';
       const controls=newNode('div','my-playlists-track-controls');
       const play=newNode('button','','▶');play.type='button';play.title='Play from this track';play.setAttribute('aria-label','Play '+t.title);play.disabled=!ready;
       play.onclick=()=>{const playableBefore=p.tracks.slice(0,i).filter(resolveTrack).length;playPlaylist(false,playableBefore)};
       const up=newNode('button','','↑');up.type='button';up.disabled=i===0;up.title='Move up';up.setAttribute('aria-label','Move '+t.title+' up');up.onclick=()=>moveTrack(i,-1);
       const down=newNode('button','','↓');down.type='button';down.disabled=i===p.tracks.length-1;down.title='Move down';down.setAttribute('aria-label','Move '+t.title+' down');down.onclick=()=>moveTrack(i,1);
       const remove=newNode('button','my-playlists-remove','×');remove.type='button';remove.title='Remove track';remove.setAttribute('aria-label','Remove '+t.title);remove.onclick=()=>{p.tracks.splice(i,1);save()};
-      controls.append(play,up,down,remove);
+      const position=newNode('input','playlist-position');position.type='number';position.min='1';position.max=String(p.tracks.length);position.value=String(i+1);position.setAttribute('aria-label','Position of '+t.title);
+      position.onchange=()=>{const target=Math.max(0,Math.min(p.tracks.length-1,Math.floor(Number(position.value))-1));if(!Number.isFinite(target))return;const [track]=p.tracks.splice(i,1);p.tracks.splice(target,0,track);save()};
+      controls.append(play,up,down,position,remove);
       row.append(number,details,badge,controls);tracks.append(row);
     }
   }
@@ -244,6 +248,11 @@
       playlists=cleanPlaylists(event.detail.customPlaylists);selected=playlists[0]?.id||'';render();
     });
     window.ArtistWaveCloud.getPlaylists=()=>cleanPlaylists(playlists);
+    window.addEventListener('artistwave:connections',render);
+    window.addEventListener('artistwave:local-library',render);
+    const dedupe=newNode('button','','Remove duplicates');dedupe.type='button';
+    dedupe.onclick=()=>{const p=current();if(!p)return;const seen=new Set(),before=p.tracks.length;p.tracks=p.tracks.filter(t=>{const key=identity(t);if(seen.has(key))return false;seen.add(key);return true});save();notify((before-p.tracks.length)+' duplicate entries removed. Distinct recordings are kept.')};
+    $('myPlaylistsShuffle').after(dedupe);
     render();
   }
   window.ArtistWavePlaylists={addTrack,showLibrary,showAudio,cleanTrack,cleanPlaylists,

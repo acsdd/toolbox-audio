@@ -64,7 +64,7 @@ function createPlex({ file, secureStorage, openExternal, fetchImpl = fetch, poll
     return connection
   }
   const summary = () => ({
-    connected: Boolean(connection), url: connection?.url || '', username: '',
+    id: connection?.id || '', connected: Boolean(connection), url: connection?.url || '', username: '',
     libraries: connection?.libraries || [], error: storageError
   })
   const mediaUrl = (config, kind, id) => MEDIA_PREFIX + config.id + '/' + kind + '?id=' + encodeURIComponent(id)
@@ -144,7 +144,7 @@ function createPlex({ file, secureStorage, openExternal, fetchImpl = fetch, poll
       return {
         albums: albums.map(item => ({
           id: String(item.ratingKey), name: String(item.title || 'Untitled album'),
-          artist: String(item.parentTitle || 'Unknown artist'), count: Number(item.leafCount) || 0,
+          year: Number(item.year)||0, artist: String(item.parentTitle || 'Unknown artist'), count: Number(item.leafCount) || 0,
           artwork: /^\/library\/metadata\/\d+\/thumb(?:\/\d+)?$/.test(item.thumb || '') ? mediaUrl(config, 'cover', item.thumb) : ''
         })),
         more: start + albums.length < Number(container.totalSize || 0) || (!container.totalSize && albums.length === 40)

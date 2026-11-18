@@ -1,12 +1,12 @@
 'use strict';
 /* ArtistWave application shell only. Never cache music, cloud-account APIs,
    remote artwork, Google OAuth, or other provider responses. */
-const CACHE='artistwave-shell-v3.4';
+const CACHE='artistwave-shell-v3.5';
 const SCOPE=new URL(self.registration.scope);
 const ASSETS=[
   './','./index.html','./styles.css','./app.js','./cloud-sync.js',
   './studio.js','./navigation.js','./playlists.js','./mini-player-host.js',
-  './navidrome.js',
+  './navidrome.js','./library-data.js','./my-music.js','./listening-session.js','./music.css',
   './mini-player.html','./mini-player.css','./mini-player.js','./theme.js',
   './install.js','./manifest.webmanifest','./icon-192.png','./icon-512.png'
 ];

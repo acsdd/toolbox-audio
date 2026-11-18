@@ -293,7 +293,8 @@ async function importLocalFiles(entries,{folder=false}={}){
       const artist=(tags.artist||fallback.artist).replace(/\0/g,' / ').trim();
       const title=tags.title||fallback.title;
       const url=URL.createObjectURL(file);
-      const track={id:'local:'+id,title,artist,collection:tags.collection||fallback.collection,albumKind:tags.collection||fallback.collection!=='Your device'?'album':'single',source:'LOCAL',url,path};
+      const localKey=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(id))),b=>b.toString(16).padStart(2,'0')).join('');
+      const track={localKey,id:'local:'+id,title,artist,collection:tags.collection||fallback.collection,albumKind:tags.collection||fallback.collection!=='Your device'?'album':'single',source:'LOCAL',url,path};
       S.local.push(track);
       S.localFiles.add(id);added++;
     }
@@ -303,7 +304,7 @@ async function importLocalFiles(entries,{folder=false}={}){
     show(added+' local file'+(added===1?'':'s')+' added; '+ignored+' skipped. Music stays on your device.');
   }catch(error){
     show('Could not read all files: '+error.message,true);
-  }finally{S.importingFolder=false}
+  }finally{S.importingFolder=false;window.dispatchEvent(new Event('artistwave:local-library'))}
 }
 async function importFolderHandle(handle){
   async function* visit(directory,prefix){
@@ -681,6 +682,7 @@ function tryNextSource(token=S.playbackToken){
   const track=current();S.activeSource=null;
   audio.pause();audio.removeAttribute('src');clearPlaybackRecovery();
   show('Could not play '+(track?.title||'this track')+' from the available sources. Select another track.',true);
+  window.dispatchEvent(new CustomEvent('artistwave:playback-error',{detail:{track}}));
   updatePlayer();
   return false;
 }
@@ -1002,7 +1004,7 @@ $('showUnavailable').addEventListener('change',()=>{
 
 $('searchForm').addEventListener('submit',e=>{e.preventDefault();const term=$('artistInput').value.trim();if(term)searchMatches(term)});
 $('loadMore').onclick=loadMore;
-$('playButton').onclick=()=>{if(!audio.src&&S.tracks.length){playAt(0);return}audio.paused?audio.play().catch(()=>{}):audio.pause()};
+$('playButton').onclick=()=>{if(!audio.src&&S.tracks.length){if(S.selected<0)playAt(0);else if(window.ArtistWaveSession?.resume)window.ArtistWaveSession.resume();else playAt(S.selected);return}audio.paused?audio.play().catch(()=>{}):audio.pause()};
 $('nextButton').onclick=()=>next(1);$('previousButton').onclick=()=>next(-1);
 $('smartQueueToggle').addEventListener('click',()=>setSmartQueueOpen($('smartQueuePanel').hidden));
 $('smartQueueClose').addEventListener('click',()=>setSmartQueueOpen(false));
@@ -1618,6 +1620,23 @@ restoreFolderHandle();
 window.ArtistWaveLibrary={
   getSongs:()=>S.view==='favorites'?dedupeTracks(S.favorites):S.view==='recent'?dedupeTracks(S.recent):S.tracks,
   getCurrent:()=>current(),
+  getLocal:()=>S.local.slice(),
+  sessionSnapshot:()=>({tracks:S.tracks,selected:S.selected,time:audio.currentTime,smartQueue:S.smartQueue,smartOnDeck:S.smartOnDeck,smartOrigin:S.smartOrigin,albumQueue:S.albumQueue,shuffle:S.shuffle,repeat:S.repeat,volume:audio.volume}),
+  restoreSession:session=>{
+    if(S.selected>=0||!session.tracks.length)return false;
+    S.tracks=session.tracks;S.selected=Math.max(0,Math.min(session.selected,S.tracks.length-1));
+    S.smartQueue=session.smartQueue||[];S.shuffle=Boolean(session.shuffle);S.repeat=[0,1,2].includes(session.repeat)?session.repeat:0;
+    S.smartOnDeck=Boolean(session.smartOnDeck);S.smartOrigin=session.smartOrigin;S.albumQueue=session.albumQueue||[];
+    audio.volume=Math.max(0,Math.min(1,Number(session.volume)||0));$('volumeBar').value=audio.volume*100;
+    $('shuffleButton').classList.toggle('active',S.shuffle);$('repeatButton').classList.toggle('active',S.repeat>0);
+    $('playlistHeading').textContent='Last listening session · Press Play to resume';renderSmartQueue();render();updatePlayer();return true;
+  },
+  resumeSession:(position=0)=>{
+    const track=current(),resolved=window.ArtistWaveLibraryData.resolve(track||{},S.local,window.ArtistWaveConnections||{});
+    if(!resolved)return false;S.tracks[S.selected]=resolved;
+    const onMetadata=()=>{if(current()===resolved&&Number.isFinite(audio.duration))audio.currentTime=Math.min(position,Math.max(0,audio.duration-.1));};
+    audio.addEventListener('loadedmetadata',onMetadata,{once:true});playAt(S.selected,{keepAlbum:true,queued:S.smartOnDeck});return true;
+  },
   getQueue:()=>S.tracks.map((t,i)=>({title:t.title,artist:t.artist,index:i})),
   getSelectedIndex:()=>S.selected,
   getSmartQueue:()=>S.smartQueue.map((t,index)=>({title:t.title,artist:t.artist,index})),

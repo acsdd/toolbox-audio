@@ -50,6 +50,7 @@
   }
   function showConnection(state){
     connection=state;
+    window.ArtistWaveConnections??={};window.ArtistWaveConnections[provider.toUpperCase()]=state;window.dispatchEvent(new Event('artistwave:connections'));
     $('navidromeUrl').value=state.url||'';
     $('navidromeUser').value=state.username||'';
     $('navidromePassword').value='';

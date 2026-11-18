@@ -87,7 +87,8 @@
     createdAt:String(p.createdAt||'').slice(0,35),
     tracks:(Array.isArray(p.tracks)?p.tracks:[]).slice(0,350).filter(t=>t&&t.title&&t.artist).map(t=>{
       if(t.source==='LOCAL')return {id:'',title:String(t.title).slice(0,250),artist:String(t.artist).slice(0,250),
-        collection:String(t.collection||'').slice(0,250),source:'LOCAL',url:''};
+        collection:String(t.collection||'').slice(0,250),source:'LOCAL',url:'',
+        ...(/^[a-f0-9]{64}$/.test(t.localKey||'')?{localKey:t.localKey}:{})};
       return cleanOnlineTrack(t);
     }).filter(Boolean)
   })):[];

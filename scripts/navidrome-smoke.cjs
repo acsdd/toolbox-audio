@@ -34,8 +34,12 @@ const server = http.createServer((req,res) => {
   }
   const data = { status:'ok', version:'1.16.1' }
   if (url.pathname === '/rest/getAlbumList2.view' || url.pathname === '/rest/search3.view') {
+    const indexing=Boolean(process.env.MUSIC_INDEX_SMOKE)
+    const offset=Number(url.searchParams.get('offset')||0)
     data[url.pathname.includes('search3') ? 'searchResult3' : 'albumList2'] = {
-      album:[{id:'album-1',name:'Test album',artist:'Test artist',songCount:1}]
+      album:!indexing?[{id:'album-1',name:'Test album',artist:'Test artist',songCount:1}]:offset===0?
+        Array.from({length:40},(_,i)=>({id:'album-'+i,name:'Test album '+i,artist:'Test artist',songCount:1})):
+        offset===40?[{id:'album-40',name:'Hidden beyond first page',artist:'Test artist',songCount:1}]:[]
     }
   }
   if (url.pathname === '/rest/getAlbum.view') data.album = {
@@ -65,7 +69,25 @@ server.listen(0,'127.0.0.1',async()=>{
       document.getElementById('navidromePassword').value='fixture-password';
       document.getElementById('navidromeConnect').requestSubmit();
     })()`)
-    await waitFor(win,"document.querySelectorAll('.navidrome-album').length === 1 && !document.querySelector('.navidrome-album').disabled")
+    await waitFor(win,"document.querySelectorAll('.navidrome-album').length > 0 && !document.querySelector('.navidrome-album').disabled")
+    await win.webContents.executeJavaScript("document.querySelector('.navidrome-dialog').close();document.getElementById('myMusicOpen').click()")
+    await waitFor(win,"document.querySelectorAll('.music-album').length > 0 && !document.getElementById('musicRefresh').disabled")
+    if(process.env.MUSIC_INDEX_SMOKE){
+      await waitFor(win,"document.getElementById('musicStatus').textContent.includes('41 albums indexed') && document.getElementById('musicCancelScan').hidden")
+      await win.webContents.executeJavaScript("document.getElementById('musicSearch').value='Hidden beyond';document.getElementById('musicSearch').dispatchEvent(new Event('input'))")
+      assert.equal(await win.webContents.executeJavaScript("document.querySelectorAll('.music-album').length"),1)
+      await win.webContents.executeJavaScript("document.getElementById('musicSearch').value='';document.getElementById('musicSearch').dispatchEvent(new Event('input'))")
+    }
+    await win.webContents.executeJavaScript("document.getElementById('musicSort').value='artist';document.getElementById('musicSort').dispatchEvent(new Event('change'));document.querySelector('#musicAlbums button').click()")
+    await waitFor(win,"document.querySelectorAll('.music-album').length > 0")
+    await win.webContents.executeJavaScript("document.querySelector('.music-album-open').click()")
+    await waitFor(win,"document.querySelectorAll('.music-track').length === 1")
+    if(process.env.MUSIC_SMOKE_SCREENSHOT){
+      if(process.env.MUSIC_SMOKE_DAY)await win.webContents.executeJavaScript("window.ArtistWaveTheme.applyTheme('day')")
+      fs.writeFileSync(process.env.MUSIC_SMOKE_SCREENSHOT,(await win.webContents.capturePage()).toPNG())
+    }
+    await win.webContents.executeJavaScript("document.getElementById('musicClose').click();document.getElementById('navidromeOpen').click()")
+    await waitFor(win,"document.querySelectorAll('.navidrome-album').length > 0 && !document.querySelector('.navidrome-album').disabled")
     await win.webContents.executeJavaScript("document.querySelector('.navidrome-album').click()")
     await waitFor(win,"document.querySelectorAll('.navidrome-track').length === 1 && !document.getElementById('navidromePlayAlbum').disabled")
     if(process.env.NAVIDROME_SMOKE_SCREENSHOT){
@@ -81,6 +103,15 @@ server.listen(0,'127.0.0.1',async()=>{
     assert(!fs.readFileSync(path.join(userData,'navidrome.bin')).includes(Buffer.from('fixture-user')))
     await win.webContents.executeJavaScript("document.getElementById('audio').currentTime=5")
     await waitFor(win,"document.getElementById('audio').currentTime >= 5")
+    await win.webContents.executeJavaScript("document.getElementById('audio').pause()")
+    const saved=await win.webContents.executeJavaScript("JSON.parse(localStorage.getItem('artistwave:listening-session:v1'))")
+    assert(saved.time>=5);assert.equal(saved.tracks[0].source,'NAVIDROME')
+    win.webContents.reload()
+    await new Promise(resolve=>win.webContents.once('did-finish-load',resolve))
+    await waitFor(win,"window.ArtistWaveConnections?.NAVIDROME?.connected && window.ArtistWaveLibrary?.getCurrent()?.title === 'Test track'")
+    assert(await win.webContents.executeJavaScript("document.getElementById('audio').paused && !document.getElementById('audio').getAttribute('src')"))
+    await win.webContents.executeJavaScript("document.querySelector('.listening-notice button').click()")
+    await waitFor(win,"document.getElementById('audio').currentTime >= 5 && !document.getElementById('audio').paused")
     await win.webContents.executeJavaScript("document.getElementById('openMiniPlayer').click()")
     await delay(800)
     assert.equal(win.getBounds().width,380)
@@ -88,7 +119,7 @@ server.listen(0,'127.0.0.1',async()=>{
     assert.equal(title,'Test track')
     await win.webContents.executeJavaScript("window.AudioWaveNavidrome.disconnect()")
     assert(!fs.existsSync(path.join(userData,'navidrome.bin')))
-    console.log('NAVIDROME SMOKE PASSED: connection, browsing, playback, seeking, encrypted storage, Mini and disconnect')
+    console.log('NAVIDROME SMOKE PASSED: unified artist/album browsing, connection, playback, seeking, encrypted storage, paused reload/resume, Mini and disconnect')
     clearTimeout(watchdog);server.close();app.exit(0)
   }catch(error){console.error(error);clearTimeout(watchdog);server.close();app.exit(1)}
 })
