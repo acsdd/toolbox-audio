@@ -38,7 +38,9 @@
       year:String(t.year||'').slice(0,4),
       ...(typeof t.artwork==='string'&&/^https:\/\//.test(t.artwork)?{artwork:t.artwork.slice(0,1800)}:{}),
       source:String(t.source||'ARCHIVE').slice(0,30),url:t.url.slice(0,1800),
-      ...(typeof t.sourceUrl==='string'&&/^https:\/\//.test(t.sourceUrl)?{sourceUrl:t.sourceUrl.slice(0,1800)}:{})
+      ...(typeof t.sourceUrl==='string'&&/^https:\/\//.test(t.sourceUrl)?{sourceUrl:t.sourceUrl.slice(0,1800)}:{}),
+      ...(typeof t.licenseUrl==='string'&&/^https:\/\//.test(t.licenseUrl)?{licenseUrl:t.licenseUrl.slice(0,1800)}:{}),
+      ...(typeof t.attribution==='string'?{attribution:t.attribution.slice(0,1500)}:{})
     };
   };
   const cleanFavorites=value=>Array.isArray(value)?value

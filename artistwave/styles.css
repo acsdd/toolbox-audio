@@ -931,6 +931,7 @@ body[data-mode="audio"] .app-shell{
 [data-theme="day"] .track-info small,[data-theme="day"] .track-source,
 [data-theme="day"] .album-count,[data-theme="day"] .recording-name{color:#4d6856}
 [data-theme="day"] .album-group{background:#fffefa;border-color:#c1d1c2}
+.openverse-credit{display:block;white-space:normal;line-height:1.35;margin-top:4px;overflow-wrap:anywhere}
 [data-theme="day"] .album-header{background:#eaf1e5;border-color:#c1d1c2}
 [data-theme="day"] .album-play-button{background:#376b3a;color:#fff}
 [data-theme="day"] .album-play-button:hover{background:#28562e}

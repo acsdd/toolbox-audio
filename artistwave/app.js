@@ -84,7 +84,7 @@ function mergePlaylistTracks(incoming){
   }else S.selected=-1;
 }
 
-const onlineProviderIds={archive:'providerArchive',audius:'providerAudius',jamendo:'providerJamendo'};
+const onlineProviderIds={archive:'providerArchive',audius:'providerAudius',jamendo:'providerJamendo',openverse:'providerOpenverse',ccmixter:'providerCcMixter'};
 function providerEnabled(name){
   const element=$(onlineProviderIds[name]);
   return Boolean(element?.checked)&&sourceMode()!=='local';
@@ -160,12 +160,43 @@ async function fetchJamendoTracks(artist){
   if(result.headers?.status!=='success')throw Error(result.headers?.error_message||'Provider rejected the request');
   return dedupeTracks(normalizeJamendoTracks(result.results,artist));
 }
+function normalizeOpenverseTracks(records,artist){
+  return (Array.isArray(records)?records:[]).filter(t=>{
+    if(!t||!t.id||!t.title||t.source!=='wikimedia_audio'||t.category!=='music'||norm(t.creator)!==norm(artist))return false;
+    try{return new URL(t.url).hostname==='upload.wikimedia.org'&&new URL(t.url).protocol==='https:'&&new URL(t.foreign_landing_url).hostname==='commons.wikimedia.org'&&new URL(t.license_url).protocol==='https:'}catch{return false}
+  }).map(t=>({
+    id:'openverse:'+t.id,title:String(t.title),artist:String(t.creator),collection:t.audio_set?.title||'Wikimedia Commons',albumKind:t.audio_set?.title?'album':'single',source:'OPENVERSE',url:t.url,
+    sourceUrl:t.foreign_landing_url,licenseUrl:t.license_url,attribution:String(t.attribution||'').slice(0,1500)
+  }));
+}
+async function fetchOpenverseTracks(artist){
+  const params=new URLSearchParams({creator:artist,source:'wikimedia_audio',category:'music',page_size:'50'});
+  const result=await getJSON('https://api.openverse.org/v1/audio/?'+params);
+  return dedupeTracks(normalizeOpenverseTracks(result.results,artist));
+}
+function normalizeCcMixterTracks(records,artist){
+  return (Array.isArray(records)?records:[]).flatMap(t=>{
+    if(!t||!t.upload_id||!t.upload_name||!providerArtistMatches(t.user_real_name,t.user_name,artist))return [];
+    let source,license;
+    try{source=new URL(t.file_page_url);license=new URL(t.license_url);if(source.protocol!=='https:'||source.hostname!=='ccmixter.org'||!['http:','https:'].includes(license.protocol)||license.hostname!=='creativecommons.org')return [];license.protocol='https:'}catch{return []}
+    const file=(Array.isArray(t.files)?t.files:[]).find(f=>{
+      try{const url=new URL(f.download_url);return url.protocol==='https:'&&url.hostname==='ccmixter.org'&&/^audio\/(mpeg|ogg|wav|x-wav|mp4)$/i.test(f.file_format_info?.mime_type||'')&&!['preview','samples'].includes(f.file_extra?.type)}catch{return false}
+    });
+    if(!file)return [];
+    const creator=String(t.user_real_name||t.user_name);
+    return [{id:'ccmixter:'+t.upload_id,title:String(t.upload_name),artist:creator,collection:'ccMixter',albumKind:'single',source:'CCMIXTER',url:file.download_url,sourceUrl:source.href,licenseUrl:license.href,attribution:String(t.upload_name)+' · '+creator+' · '+String(t.license_name||'Creative Commons')}];
+  });
+}
+async function fetchCcMixterTracks(artist){
+  if(!window.AudioWaveCcMixter)throw Error('ccMixter search is available in AudioWave.');
+  return dedupeTracks(normalizeCcMixterTracks(await window.AudioWaveCcMixter.search(artist),artist));
+}
 async function searchOnlineProvider(provider,artist,selection){
   if(!providerEnabled(provider)||S.providerBusy[provider]||S.providerChecked[provider])return;
   S.providerBusy[provider]=true;delete S.providerErrors[provider];
   refreshProviderStatus();
   try{
-    const tracks=provider==='audius'?await fetchAudiusTracks(artist):await fetchJamendoTracks(artist);
+    const tracks=provider==='audius'?await fetchAudiusTracks(artist):provider==='openverse'?await fetchOpenverseTracks(artist):provider==='ccmixter'?await fetchCcMixterTracks(artist):await fetchJamendoTracks(artist);
     if(selection!==S.matchRequest||S.artist!==artist)return;
     S.onlineTracks=dedupeTracks([...S.onlineTracks,...tracks]);
     S.providerChecked[provider]=true;
@@ -189,7 +220,7 @@ async function loadOnlineProviders(artist,selection){
       finally{S.providerBusy.archive=false;refreshProviderStatus()}
     })());
   }
-  for(const name of ['audius','jamendo']){
+  for(const name of ['audius','jamendo','openverse','ccmixter']){
     if(providerEnabled(name))pending.push(searchOnlineProvider(name,artist,selection));
   }
   if(!pending.length){refreshProviderStatus();return}
@@ -537,6 +568,7 @@ function render(){
     };
     const info=document.createElement('div');info.className='track-info';const title=document.createElement('strong');title.textContent=t.title;
     const artist=document.createElement('small');artist.textContent=t.artist;info.append(title,artist);
+    if(['OPENVERSE','CCMIXTER'].includes(t.source)&&t.attribution){const credit=document.createElement('small');credit.className='openverse-credit';credit.textContent=t.attribution;info.append(credit)}
     const collection=document.createElement('span');collection.className='recording-name';collection.textContent=t.collection||'Audio';
     const source=document.createElement('span');source.className='track-source';
     if(t.sourceUrl&&/^https:\/\//.test(t.sourceUrl)){
@@ -544,6 +576,7 @@ function render(){
       link.target='_blank';link.rel='noopener noreferrer';link.textContent=t.source+' ↗';
       link.setAttribute('aria-label','View '+t.title+' on '+t.source);source.append(link);
     }else source.textContent=t.source;
+    if(['OPENVERSE','CCMIXTER'].includes(t.source)&&t.licenseUrl){const license=document.createElement('a');license.href=t.licenseUrl;license.target='_blank';license.rel='noopener noreferrer';license.className='provider-link';license.textContent=' License ↗';license.title=t.attribution||'View license';source.append(document.createTextNode(' '),license)}
     const fav=document.createElement('button');fav.className='heart-button';fav.textContent=S.favorites.some(x=>x.id===t.id)?'♥':'♡';
     fav.setAttribute('aria-label','Toggle favorite');fav.onclick=()=>favorite(t);
     const add=document.createElement('button');add.type='button';add.className='track-add-playlist';add.textContent='＋';
@@ -1059,13 +1092,13 @@ $('sourceMode').addEventListener('change',()=>{
 // Provider selection is saved locally per browser; Jamendo needs the user's own
 // read-only application client ID. No API secret is stored or shipped with the site.
 try{
-  for(const provider of ['archive','audius','jamendo']){
+  for(const provider of ['archive','audius','jamendo','openverse','ccmixter']){
     const saved=localStorage.getItem('artistwave:provider:'+provider);
     if(saved!==null)$(onlineProviderIds[provider]).checked=saved==='true';
   }
   $('jamendoClientId').value=localStorage.getItem('artistwave:jamendo-client-id')||'';
 }catch{}
-for(const provider of ['archive','audius','jamendo']){
+for(const provider of ['archive','audius','jamendo','openverse','ccmixter']){
   $(onlineProviderIds[provider]).addEventListener('change',()=>{
     window.ArtistWaveCloud?.persistGuestSetting('artistwave:provider:'+provider,String($(onlineProviderIds[provider]).checked));window.ArtistWaveCloud?.changed();
     if(provider==='archive'&&$('providerArchive').checked&&S.artist&&S.page===0)S.providerChecked.archive=false;

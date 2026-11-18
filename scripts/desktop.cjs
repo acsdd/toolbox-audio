@@ -55,6 +55,27 @@ function requireAuthPage(event) {
   }
 }
 
+ipcMain.handle('audiowave:ccmixter:search', async (event, artist) => {
+  requireAuthPage(event)
+  if (typeof artist !== 'string' || !artist.trim() || artist.length > 100) throw new Error('Choose an artist name of up to 100 characters.')
+  const url = new URL('https://ccmixter.org/api/query')
+  url.search = new URLSearchParams({ f: 'json', dataview: 'upload_page', user: artist.trim(), limit: '50' }).toString()
+  const response = await net.fetch(url.href, { signal: AbortSignal.timeout(15000), redirect: 'error' })
+  if (!response.ok) throw new Error('ccMixter returned HTTP ' + response.status + '.')
+  const body = await response.text()
+  if (body.length > 4000000) throw new Error('ccMixter response was too large.')
+  const records = JSON.parse(body)
+  if (!Array.isArray(records)) throw new Error('ccMixter returned an unexpected response.')
+  return records.slice(0, 50).map(row => ({
+    upload_id: row.upload_id, upload_name: row.upload_name, user_name: row.user_name,
+    user_real_name: row.user_real_name, file_page_url: row.file_page_url,
+    license_url: row.license_url, license_name: row.license_name,
+    files: Array.isArray(row.files) ? row.files.slice(0, 20).map(file => ({
+      download_url: file.download_url, file_format_info: { mime_type: file.file_format_info?.mime_type }, file_extra: { type: file.file_extra?.type }
+    })) : []
+  }))
+})
+
 ipcMain.handle('audiowave:auth:sign-in', async (event) => {
   requireAuthPage(event)
   if (authAttempt) throw new Error('A sign-in is already open in your browser.')

@@ -21,7 +21,9 @@
       albumKind:t.albumKind==='album'?'album':t.albumKind==='collection'?'collection':'single',
       source,url,
       ...(typeof t.artwork==='string'&&/^https:\/\//.test(t.artwork)?{artwork:t.artwork.slice(0,1800)}:{}),
-      ...(typeof t.sourceUrl==='string'&&/^https:\/\//.test(t.sourceUrl)?{sourceUrl:t.sourceUrl.slice(0,1800)}:{})
+      ...(typeof t.sourceUrl==='string'&&/^https:\/\//.test(t.sourceUrl)?{sourceUrl:t.sourceUrl.slice(0,1800)}:{}),
+      ...(typeof t.licenseUrl==='string'&&/^https:\/\//.test(t.licenseUrl)?{licenseUrl:t.licenseUrl.slice(0,1800)}:{}),
+      ...(typeof t.attribution==='string'?{attribution:t.attribution.slice(0,1500)}:{})
     };
   };
   const cleanPlaylists=value=>Array.isArray(value)?value.slice(0,80).filter(p=>p&&typeof p==='object').map((p,i)=>({

@@ -6,6 +6,9 @@ if (process.isMainFrame && location.origin === 'https://acsdd.github.io' &&
     signIn: () => ipcRenderer.invoke('audiowave:auth:sign-in'),
     cancel: () => ipcRenderer.invoke('audiowave:auth:cancel')
   })
+  contextBridge.exposeInMainWorld('AudioWaveCcMixter', {
+    search: artist => ipcRenderer.invoke('audiowave:ccmixter:search', artist)
+  })
   contextBridge.exposeInMainWorld('AudioWaveNavidrome', {
     status: () => ipcRenderer.invoke('audiowave:navidrome:status'),
     connect: input => ipcRenderer.invoke('audiowave:navidrome:connect', input),
