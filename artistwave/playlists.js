@@ -43,6 +43,7 @@
   function notify(message){
     const live=$('myPlaylistsNotice');
     if(live)live.textContent=message;
+    window.ArtistWaveFeedback?.show(message);
   }
   function save(){
     playlists=cleanPlaylists(playlists);
@@ -182,8 +183,11 @@
       const p=playlists[i],card=newNode('button','my-playlists-card'+(selected===p.id?' selected':''));
       card.type='button';card.setAttribute('aria-pressed',String(selected===p.id));
       const cover=newNode('span','my-playlists-card-cover '+colors[i%colors.length],'♫');
+      const images=[...new Set(p.tracks.map(t=>t.artwork||resolveTrack(t)?.artwork).filter(url=>typeof url==='string'&&/^https:\/\//i.test(url)))].slice(0,4);
+      if(images.length){cover.textContent='';cover.classList.add('mosaic');for(const url of images){const image=document.createElement('img');image.alt='';image.loading='lazy';image.referrerPolicy='no-referrer';image.onerror=()=>{image.remove();if(!cover.querySelector('img')){cover.classList.remove('mosaic');cover.textContent='♫'}};image.src=url;cover.append(image)}}
       const copy=newNode('span','my-playlists-card-copy');
       copy.append(newNode('strong','',p.name),newNode('small','',p.tracks.length+' track'+(p.tracks.length===1?'':'s')));
+      card.title=p.name+' · '+p.tracks.length+' tracks';
       card.append(cover,copy,newNode('span','my-playlists-card-arrow','›'));
       card.onclick=()=>{selected=p.id;render()};
       cards.append(card);

@@ -3,7 +3,15 @@
 (function(){
   const $=id=>document.getElementById(id);
   const embedded=new URLSearchParams(location.search).get('embedded')==='1';
-  let host=null,lastQueue='',lastCover='',draggingSeek=false,draggingVolume=false;
+  let host=null,lastQueue='',lastCover='',draggingSeek=false,draggingVolume=false,libraryLimit=150,upNextLimit=100;
+  const miniView=$('miniViewToggle');
+  function setMiniView(view){
+    const artwork=view==='artwork';document.body.dataset.miniView=artwork?'artwork':'queue';
+    if(miniView){miniView.setAttribute('aria-pressed',String(artwork));miniView.textContent=artwork?'Queue view':'Artwork view'}
+    try{localStorage.setItem('artistwave:mini-view',artwork?'artwork':'queue')}catch{}
+  }
+  let savedView='queue';try{savedView=localStorage.getItem('artistwave:mini-view')||'queue'}catch{}
+  setMiniView(savedView);miniView?.addEventListener('click',()=>setMiniView(document.body.dataset.miniView==='artwork'?'queue':'artwork'));
   function connect(){
     try{
       const origin=embedded?window.parent:window.opener;
@@ -24,10 +32,14 @@
     return Math.floor(n/60)+':'+String(Math.floor(n%60)).padStart(2,'0');
   };
   function updateQueue(queue,selected,smartQueue=[]){
-    const signature=JSON.stringify([queue.map(t=>[t.title,t.artist,t.index]),selected,smartQueue.map(t=>[t.title,t.artist,t.index])]);
+    const signature=JSON.stringify([queue.map(t=>[t.title,t.artist,t.index]),selected,smartQueue.map(t=>[t.title,t.artist,t.index]),libraryLimit,upNextLimit]);
     if(signature===lastQueue)return;
     lastQueue=signature;
-    const list=$('miniQueueList');list.replaceChildren();
+    const list=$('miniQueueList');
+    const active=list.contains(document.activeElement)?document.activeElement:null;
+    const focusedRow=active?.closest('[data-queue-key]');
+    const focusedKey=focusedRow?.dataset.queueKey,focusedAction=active?.dataset.queueAction;
+    const previousScroll=list.scrollTop;list.replaceChildren();
     $('miniQueueCount').textContent=smartQueue.length?smartQueue.length+' up next · '+queue.length+' in library':queue.length+' track'+(queue.length===1?'':'s');
     if(!queue.length&&!smartQueue.length){
       const p=document.createElement('p');p.className='queue-empty';
@@ -37,8 +49,8 @@
     if(smartQueue.length){
       const label=document.createElement('div');label.className='mini-queue-divider';label.textContent='PLAY NEXT · TEMPORARY';
       list.append(label);
-      for(const item of smartQueue.slice(0,100)){
-        const row=document.createElement('div');row.className='queue-song queue-song-smart';
+      for(const item of smartQueue.slice(0,upNextLimit)){
+        const row=document.createElement('div');row.className='queue-song queue-song-smart';row.dataset.queueKey=JSON.stringify(['next',item.title,item.artist,item.index]);
         const info=document.createElement('span');info.className='song-info';
         const title=document.createElement('strong');title.textContent=item.title;
         const artist=document.createElement('small');artist.textContent=item.artist;
@@ -46,7 +58,7 @@
         const controls=document.createElement('span');controls.className='mini-queue-actions';
         const action=(label,verb,fn)=>{
           const button=document.createElement('button');button.type='button';
-          button.textContent=label;button.title=verb;button.setAttribute('aria-label',verb+' '+item.title);
+          button.textContent=label;button.title=verb;button.dataset.queueAction=verb;button.setAttribute('aria-label',verb+' '+item.title);
           button.onclick=fn;controls.append(button);
         };
         action('▶','Play now',()=>send('queuePlay',item.index));
@@ -55,15 +67,23 @@
         action('×','Remove',()=>send('queueRemove',item.index));
         row.append(info,controls);list.append(row);
       }
+      if(smartQueue.length>upNextLimit){
+        const more=document.createElement('button');more.type='button';more.className='mini-show-more mini-show-more-next';
+        more.textContent='Show more up next ('+(smartQueue.length-upNextLimit)+' remaining)';
+        more.onclick=()=>{const firstNew=upNextLimit;upNextLimit+=100;updateQueue(queue,selected,smartQueue);list.querySelectorAll('.queue-song-smart')[firstNew]?.querySelector('button')?.focus()};
+        list.append(more);
+      }
       if(queue.length){
         const label=document.createElement('div');label.className='mini-queue-divider';label.textContent='YOUR LIBRARY';
         list.append(label);
       }
     }
-    for(const track of queue.slice(0,150)){
+    for(const track of queue.slice(0,libraryLimit)){
       const button=document.createElement('button');button.type='button';
       button.className='queue-song'+(track.index===selected?' active':'');
+      button.dataset.queueKey=JSON.stringify(['library',track.title,track.artist,track.index]);button.dataset.queueAction='play';
       button.setAttribute('aria-label','Play '+track.title+' by '+track.artist);
+      button.title=track.title+' — '+track.artist;if(track.index===selected)button.setAttribute('aria-current','true');
       const number=document.createElement('span');number.textContent=track.index===selected?'♫':String(track.index+1).padStart(2,'0');
       const copy=document.createElement('span');copy.className='song-info';
       const title=document.createElement('strong');title.textContent=track.title;
@@ -73,6 +93,18 @@
       button.append(number,copy,arrow);
       button.onclick=()=>send('track',track.index);
       list.append(button);
+    }
+    if(queue.length>libraryLimit){
+      const more=document.createElement('button');more.type='button';more.className='mini-show-more mini-show-more-library';
+      more.textContent='Show more tracks ('+(queue.length-libraryLimit)+' remaining)';
+      more.onclick=()=>{const firstNew=libraryLimit;libraryLimit+=150;updateQueue(queue,selected,smartQueue);list.querySelectorAll('button.queue-song')[firstNew]?.focus()};
+      list.append(more);
+    }
+    list.scrollTop=previousScroll;
+    if(focusedKey&&focusedAction){
+      const row=Array.from(list.querySelectorAll('[data-queue-key]')).find(node=>node.dataset.queueKey===focusedKey);
+      const replacement=row?.dataset.queueAction===focusedAction?row:Array.from(row?.querySelectorAll('[data-queue-action]')||[]).find(node=>node.dataset.queueAction===focusedAction);
+      replacement?.focus({preventScroll:true});
     }
   }
   function refresh(){
