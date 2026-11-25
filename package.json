@@ -1,7 +1,7 @@
 {
   "name": "toolbox-audio",
   "productName": "AudioWave",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "AudioWave desktop music player with local, Navidrome and Plex libraries.",
   "author": "Alpha Team",
   "license": "MIT",

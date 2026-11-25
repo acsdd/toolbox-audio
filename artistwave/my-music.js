@@ -82,7 +82,7 @@
       panel.replaceChildren(node('h3','',album.name+' · '+album.artist));
       const play=index=>{dialog.close();$('discoverNav').click();window.ArtistWaveLibrary.playPlaylist(tracks,index,album.name)};
       if(!tracks.length)panel.append(node('p','','No playable tracks in this album.'));
-      else panel.append(button('▶ Play album',()=>play(0)));
+      else {panel.append(button('▶ Play album',()=>play(0)));panel.append(button('＋ Add album to playlist',()=>{dialog.close();window.ArtistWavePlaylists.addAlbum(tracks,album.name)}))}
       tracks.forEach((track,index)=>{const row=node('div','music-track');row.append(button('▶ '+track.title,()=>play(index)),node('span','',track.artist),button('＋ Playlist',()=>{dialog.close();window.ArtistWavePlaylists.addTrack(track)}));panel.append(row)});
       panel.scrollIntoView({block:'nearest'});
     }catch(error){if(version===generation){panel.replaceChildren(node('p','',error.message),button('Retry',()=>openAlbum(album)))}}

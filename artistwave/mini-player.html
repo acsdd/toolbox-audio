@@ -14,7 +14,7 @@
     <header class="mini-top">
       <div class="mini-brand"><span class="brand-icon">◖◗</span><span>artist<strong>wave</strong></span></div>
       <span class="mini-label">MINI PLAYER</span>
-      <button id="themeToggle" class="theme-toggle" type="button" aria-label="Switch to Day theme" aria-pressed="false">☀ Day</button>
+      <label class="theme-select-label"><span>Select theme</span><select id="themeSelect" aria-label="Color theme"><option value="night">Night</option><option value="day">Day</option><option value="bright-night">Bright Night</option><option value="ocean">Ocean</option><option value="plum">Plum</option><optgroup label="Looney Tunes"><option value="bugs">Bugs Bunny</option><option value="daffy">Daffy Duck</option><option value="tweety">Tweety</option><option value="sylvester">Sylvester</option><option value="taz">Tasmanian Devil</option><option value="roadrunner">Road Runner</option></optgroup></select></label>
       <button id="miniClose" class="mini-close" type="button" aria-label="Close mini player">×</button>
     </header>
     <main class="mini-main">
@@ -35,11 +35,11 @@
         <div class="mini-time"><span id="miniCurrent">0:00</span><span id="miniDuration">0:00</span></div>
       </div>
       <nav class="mini-controls" aria-label="Music playback">
-        <button type="button" id="miniShuffle" title="Shuffle" aria-label="Toggle shuffle">⤨</button>
+        <button type="button" id="miniShuffle" title="Shuffle" aria-label="Toggle shuffle" aria-pressed="false">⤨</button>
         <button type="button" id="miniPrevious" aria-label="Previous track">⏮</button>
         <button type="button" id="miniPlay" class="play" aria-label="Play or pause">▶</button>
         <button type="button" id="miniNext" aria-label="Next track">⏭</button>
-        <button type="button" id="miniRepeat" title="Repeat" aria-label="Change repeat mode">↻</button>
+        <button type="button" id="miniRepeat" title="Repeat" aria-label="Change repeat mode" aria-pressed="false">↻</button>
       </nav>
       <div class="mini-more">
         <button id="miniFavorite" class="mini-pill" type="button" aria-label="Toggle favorite">♡ <span>Favorite</span></button>

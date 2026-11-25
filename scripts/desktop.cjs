@@ -352,7 +352,19 @@ if (!app.requestSingleInstanceLock()) {
       }
     })
     mainWindow.on('page-title-updated', (event) => event.preventDefault())
-    mainWindow.on('ready-to-show', () => mainWindow.show())
+    let adjustingHeight = false
+    function fitWindowHeight() {
+      if (!mainWindow || mainWindow.isDestroyed() || mainWindow.isMaximized() || mainWindow.isFullScreen() || adjustingHeight) return
+      const bounds = mainWindow.getBounds()
+      const { workArea } = screen.getDisplayMatching(bounds)
+      if (bounds.y === workArea.y && bounds.height === workArea.height) return
+      adjustingHeight = true
+      try { mainWindow.setBounds({ ...bounds, y: workArea.y, height: workArea.height }) }
+      finally { adjustingHeight = false }
+    }
+    mainWindow.on('ready-to-show', () => { fitWindowHeight(); mainWindow.show() })
+    mainWindow.on('resized', fitWindowHeight)
+    mainWindow.on('moved', fitWindowHeight)
 
     let fullBounds = null
     let probing = false

@@ -2,7 +2,7 @@
 /* ArtistWave appearance: a browser-local preference, shared by main and mini windows. */
 (function(){
   const KEY='artistwave:appearance';
-  const choices=new Set(['day','night']);
+  const choices=new Set(['day','night','bright-night','ocean','plum','bugs','daffy','tweety','sylvester','taz','roadrunner']);
   function savedTheme(){
     try{
       const value=localStorage.getItem(KEY);
@@ -15,14 +15,8 @@
     document.documentElement.style.colorScheme=mode==='day'?'light':'dark';
     const meta=document.querySelector('meta[name="theme-color"]');
     if(meta)meta.setAttribute('content',mode==='day'?'#f6f8f0':'#0b1015');
-    const button=document.getElementById('themeToggle');
-    if(button){
-      const isDay=mode==='day';
-      button.textContent=isDay?'☾ Night':'☀ Day';
-      button.setAttribute('aria-label',isDay?'Switch to Night theme':'Switch to Day theme');
-      button.setAttribute('aria-pressed',String(isDay));
-      button.title=isDay?'Use night colors':'Use daylight colors';
-    }
+    const selector=document.getElementById('themeSelect');
+    if(selector)selector.value=mode;
     if(persist){
       try{localStorage.setItem(KEY,mode)}catch{}
       const iframe=document.getElementById('miniPlayerFallbackFrame');
@@ -34,7 +28,7 @@
   }
   const toggle=()=>applyTheme(document.documentElement.dataset.theme==='day'?'night':'day',true);
   applyTheme(savedTheme());
-  document.getElementById('themeToggle')?.addEventListener('click',toggle);
+  document.getElementById('themeSelect')?.addEventListener('change',event=>applyTheme(event.target.value,true));
   window.addEventListener('storage',event=>{
     if(event.key===KEY)applyTheme(choices.has(event.newValue)?event.newValue:'night');
   });

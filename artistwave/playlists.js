@@ -33,7 +33,7 @@
     tracks:(Array.isArray(p.tracks)?p.tracks:[]).slice(0,350).map(cleanTrack).filter(Boolean)
   })):[];
   const load=()=>{try{return cleanPlaylists(JSON.parse(localStorage.getItem(STORE)||'[]'))}catch{return []}};
-  let playlists=load(),selected='',pendingTrack=null,dialogMode='create',renaming='';
+  let playlists=load(),selected='',pendingTrack=null,pendingAlbum=null,dialogMode='create',renaming='';
   const current=()=>playlists.find(p=>p.id===selected)||null;
   const createId=()=>('playlist-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10));
   const newNode=(tag,cls,text)=>{
@@ -103,11 +103,26 @@
     return true;
   }
   function addTrack(track){
+    pendingAlbum=null;
     pendingTrack=cleanTrack(track);
     if(!pendingTrack){notify('This track cannot be added.');return}
     $('playlistPickerTrack').textContent=pendingTrack.title+' · '+pendingTrack.artist;
     renderChoices();
     $('playlistPickerDialog').showModal();
+  }
+  function addAlbum(tracks,label='Album'){
+    pendingTrack=null;
+    pendingAlbum=(Array.isArray(tracks)?tracks:[]).map(cleanTrack).filter(Boolean);
+    if(!pendingAlbum.length){pendingAlbum=null;notify('This album has no supported playable tracks.');return}
+    $('playlistPickerTrack').textContent=label+' · '+pendingAlbum.length+' tracks';
+    renderChoices();$('playlistPickerDialog').showModal();
+  }
+  function addPendingAlbum(playlist){
+    if(!pendingAlbum)return;
+    const seen=new Set(playlist.tracks.map(identity));let added=0,duplicates=0,full=0;
+    for(const track of pendingAlbum){const key=identity(track);if(seen.has(key)){duplicates++;continue}if(playlist.tracks.length>=350){full++;continue}seen.add(key);playlist.tracks.push(track);added++}
+    selected=playlist.id;save();
+    notify('Added '+added+' tracks to '+playlist.name+(duplicates?' · '+duplicates+' already present':'')+(full?' · '+full+' exceeded the 350-track limit':'')+'.');
   }
   function renderChoices(){
     const list=$('playlistPickerChoices');list.replaceChildren();
@@ -124,7 +139,8 @@
       button.append(name,count,arrow);
       button.onclick=()=>{
         if(pendingTrack)addTrackTo(p,pendingTrack);
-        $('playlistPickerDialog').close();pendingTrack=null;
+        if(pendingAlbum)addPendingAlbum(p);
+        $('playlistPickerDialog').close();pendingTrack=null;pendingAlbum=null;
       };
       list.append(button);
     }
@@ -234,16 +250,17 @@
         if(p){p.name=name;save()}
       }else{
         const p=createPlaylist(name);
-        if(p&&pendingTrack){
-          addTrackTo(p,pendingTrack);
+        if(p&&(pendingTrack||pendingAlbum)){
+          if(pendingTrack)addTrackTo(p,pendingTrack);
+          if(pendingAlbum)addPendingAlbum(p);
           $('playlistPickerDialog').close();
-          pendingTrack=null;
+          pendingTrack=null;pendingAlbum=null;
         }
       }
       $('playlistDialog').close();
       if(dialogMode==='create'&&!document.body.dataset.libraryView?.includes('playlists'))showLibrary();
     });
-    $('playlistPickerCancel').addEventListener('click',()=>{pendingTrack=null;$('playlistPickerDialog').close()});
+    $('playlistPickerCancel').addEventListener('click',()=>{pendingTrack=null;pendingAlbum=null;$('playlistPickerDialog').close()});
     $('playlistPickerCreate').addEventListener('click',()=>openEditor('create'));
     window.addEventListener('artistwave:cloud-load',event=>{
       if(!Array.isArray(event.detail?.customPlaylists))return;
@@ -257,7 +274,7 @@
     $('myPlaylistsShuffle').after(dedupe);
     render();
   }
-  window.ArtistWavePlaylists={addTrack,showLibrary,showAudio,cleanTrack,cleanPlaylists,
+  window.ArtistWavePlaylists={addTrack,addAlbum,showLibrary,showAudio,cleanTrack,cleanPlaylists,
     list:()=>playlists.map(p=>({id:p.id,name:p.name,count:p.tracks.length})),
     play:id=>{if(!playlists.some(p=>p.id===id))return;selected=id;playPlaylist(false)}
   };

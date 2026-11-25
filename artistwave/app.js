@@ -1,11 +1,12 @@
 'use strict';
 const $=id=>document.getElementById(id),audio=$('audio');
+const scrollMotion=()=>window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches?'auto':'smooth';
 const S={artist:'',tracks:[],local:[],favorites:[],selected:-1,matches:[],view:'discover',shuffle:false,repeat:0,page:0,loading:false,artistMbid:null,unavailable:[],catalogLoading:false,catalogResolved:false,catalogRequest:0,requestId:0,matchRequest:0,onlineTracks:[],localFiles:new Set(),importingFolder:false,providerChecked:{},providerBusy:{},providerErrors:{},archiveItemView:false,albumQueue:[],smartQueue:[],smartOrigin:null,smartOnDeck:false,activeSource:null,playbackToken:0,playCandidates:[],playCandidateIndex:0,bufferTimer:null,recent:[],folderHandleAvailable:false};
 try{S.favorites=JSON.parse(localStorage.getItem('artistwave:favorites')||'[]')}catch{}if(!Array.isArray(S.favorites))S.favorites=[];
 try{S.recent=JSON.parse(localStorage.getItem('artistwave:recent')||'[]')}catch{}if(!Array.isArray(S.recent))S.recent=[];
 const norm=s=>String(s||'').normalize('NFKD').toLowerCase().replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
 const time=t=>Number.isFinite(t)?Math.floor(t/60)+':'+String(Math.floor(t%60)).padStart(2,'0'):'0:00';
-const show=(msg,error=false)=>{$('statusMessage').textContent=msg;$('statusMessage').classList.toggle('error',error)};
+const show=(msg,error=false)=>{const status=$('statusMessage');status.textContent=msg;status.classList.toggle('error',error);status.classList.toggle('is-searching',/^(Finding|Searching|Looking up|Loading)/i.test(msg));const issues=$('sourceIssues');if(issues)issues.hidden=true};
 const esc=s=>String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const creatorMatches=(value,name)=>{let list=Array.isArray(value)?value:[value];return list.some(v=>String(v||'').split(/\s*(?:;|\||,|\bfeat\.?\b|\bfeaturing\b)\s*/i).some(a=>norm(a)===norm(name)))};
 // Track identity is based on artist + song title, not Internet Archive URL.
@@ -123,16 +124,26 @@ function normalizeJamendoTracks(records,artist){
   }));
 }
 function refreshProviderStatus(){
-  if(sourceMode()==='local')return;
+  const issues=$('sourceIssues'),issueText=$('sourceIssuesText');
+  if(sourceMode()==='local'){if(issues)issues.hidden=true;return}
   const count=S.tracks.length;
   const enabled=Object.keys(onlineProviderIds).filter(providerEnabled);
-  const failures=Object.entries(S.providerErrors).filter(([provider])=>enabled.includes(provider)).map(([provider,message])=>provider+': '+message);
-  const pending=Object.keys(S.providerBusy).filter(provider=>S.providerBusy[provider]&&enabled.includes(provider));
-  let msg=count+' unique playable track'+(count===1?'':'s')+' available for '+S.artist+'.';
-  if(pending.length)msg+=' Searching '+pending.join(', ')+'…';
-  if(failures.length)msg+=' Source issues: '+failures.join(' · ')+'.';
-  if(!enabled.length)msg='Select at least one online provider, or use local music.';
-  show(msg,Boolean(failures.length)&&!count);
+  const failures=Object.entries(S.providerErrors).filter(([provider])=>enabled.includes(provider));
+  const pending=enabled.some(provider=>S.providerBusy[provider]||(provider==='archive'&&S.loading));
+  const songs=count+' song'+(count===1?'':'s');
+  let msg;
+  if(!enabled.length)msg=count?songs+' found in your local music. Select an online source to find more.':'Select an online source or choose local music.';
+  else if(pending)msg='Finding songs… '+count+' found so far.';
+  else if(count)msg=songs+' found.';
+  else if(failures.length===enabled.length)msg='Couldn’t search the selected sources. Check your connection or source settings.';
+  else msg='No songs found.';
+  show(msg,!pending&&!count&&failures.length===enabled.length&&enabled.length>0);
+  if(issues&&issueText){
+    const names={archive:'Internet Archive',audius:'Audius',jamendo:'Jamendo',openverse:'Openverse',ccmixter:'ccMixter'};
+    issues.hidden=!failures.length;
+    issueText.textContent=failures.map(([provider,message])=>(names[provider]||provider)+': '+message).join(' · ');
+    if(!failures.length)issues.open=false;
+  }
 }
 async function fetchAudiusTracks(artist){
   const base='https://api.audius.co/v1';
@@ -334,6 +345,7 @@ async function importLocalFiles(entries,{folder=false}={}){
     $('folderSummary').textContent=total+' local track'+(total===1?'':'s')+' indexed this session';
     show(added+' local file'+(added===1?'':'s')+' added; '+ignored+' skipped. Music stays on your device.');
   }catch(error){
+    $('folderSummary').textContent='Could not read folder. Try selecting it again.';
     show('Could not read all files: '+error.message,true);
   }finally{S.importingFolder=false;window.dispatchEvent(new Event('artistwave:local-library'))}
 }
@@ -399,6 +411,11 @@ async function reopenSavedFolder(){
 
 async function chooseLocalFolder(){
   if(S.importingFolder)return;
+  // Electron denies File System Access permissions; its native directory input
+  // returns only the files explicitly selected by the user instead.
+  if(window.AudioWaveDesktop?.folderPicker==='file-input'){
+    $('folderInput').click();return;
+  }
   if(typeof window.showDirectoryPicker==='function'){
     try{
       const handle=await window.showDirectoryPicker({mode:'read'});
@@ -417,7 +434,29 @@ async function chooseLocalFolder(){
   $('folderInput').click();
 }
 
-function updatePlayer(){const t=current();$('playlistSaveCurrent').disabled=!t;$('nowTitle').textContent=t?.title||'Nothing playing yet';$('nowArtist').textContent=t?.artist||'Find your next favorite';$('playingSource').textContent=(S.activeSource||t)?.source||'READY';$('playButton').textContent=audio.paused?'▶':'Ⅱ';$('favoriteCurrent').disabled=!t;$('favoriteCurrent').textContent=t&&S.favorites.some(x=>x.id===t.id)?'♥':'♡'}
+function updatePlayer(){
+  const t=current(),playing=Boolean(t&&!audio.paused);
+  $('playlistSaveCurrent').disabled=!t;
+  $('nowTitle').textContent=t?.title||'Nothing playing yet';
+  $('nowArtist').textContent=t?.artist||'Find your next favorite';
+  $('playingSource').textContent=(S.activeSource||t)?.source||'READY';
+  $('playButton').textContent=playing?'Ⅱ':'▶';
+  $('playButton').setAttribute('aria-label',playing?'Pause':'Play');
+  $('playButton').title=playing?'Pause':'Play';
+  $('favoriteCurrent').disabled=!t;
+  $('favoriteCurrent').textContent=t&&S.favorites.some(x=>x.id===t.id)?'♥':'♡';
+  $('shuffleButton').setAttribute('aria-pressed',String(S.shuffle));
+  $('repeatButton').setAttribute('aria-pressed',String(S.repeat>0));
+  $('repeatButton').setAttribute('aria-label',['Repeat off','Repeat all','Repeat one'][S.repeat]||'Repeat off');
+  document.querySelector('.player')?.classList.toggle('is-playing',playing);
+  document.querySelectorAll('.track-row.active').forEach(row=>row.classList.toggle('is-playing',playing));
+  const image=$('nowArtImage'),placeholder=$('nowArtPlaceholder'),cover=albumArtwork(t?.artwork);
+  if(image&&placeholder&&image.dataset.cover!==cover){
+    image.dataset.cover=cover;
+    if(cover){image.hidden=true;placeholder.hidden=false;image.onload=()=>{image.hidden=false;placeholder.hidden=true};image.onerror=()=>{image.hidden=true;placeholder.hidden=false};image.src=cover}
+    else{image.hidden=true;image.removeAttribute('src');placeholder.hidden=false}
+  }
+}
 function makeLyricsActions(track){
   const actions=document.createElement('div');actions.className='lyrics-actions';
   const query=encodeURIComponent(track.artist+' '+track.title);
@@ -434,7 +473,7 @@ function makeLyricsActions(track){
     actions.append(a);
   }
   const caption=document.createElement('span');caption.className='lyrics-credit';
-  caption.textContent='External lyrics searches · AZLyrics / Genius';
+  caption.textContent='External lyrics search';
   actions.append(caption);
   return actions;
 }
@@ -560,7 +599,7 @@ function render(){
   const catalogGroups=groupTracksByAlbum(unplayable);
   const catalogByAlbum=new Map(catalogGroups.map(group=>[group.key,group.items]));
   function appendPlayable(t,i,parent){
-    const el=document.createElement('div');el.className='track-row'+(S.view!=='favorites'&&i===S.selected?' active':'');
+    const el=document.createElement('div');const selected=S.view!=='favorites'&&i===S.selected;el.className='track-row'+(selected?' active':'')+(selected&&!audio.paused?' is-playing':'');if(selected)el.setAttribute('aria-current','true');
     const play=document.createElement('button');play.className='track-play';play.textContent='▶';play.setAttribute('aria-label','Play '+t.title);
     play.onclick=()=>{
       if(S.view==='favorites'||S.view==='recent'){S.tracks=dedupeTracks(songs);S.view='discover';clearAlbumQueue()}
@@ -644,6 +683,10 @@ function render(){
         playAlbum(playable.map(item=>item.index));
       };
       header.append(button);
+      const addAlbum=document.createElement('button');addAlbum.type='button';addAlbum.className='album-fold-button album-add-playlist';
+      addAlbum.textContent='＋ Playlist';addAlbum.setAttribute('aria-label','Add '+group.label+' album to a playlist');
+      addAlbum.onclick=()=>window.ArtistWavePlaylists?.addAlbum(playable.map(item=>item.track),group.label);
+      header.append(addAlbum);
     }
     const foldButton=document.createElement('button');
     foldButton.type='button';foldButton.className='album-fold-button';
@@ -923,7 +966,7 @@ function sourceChoice(label,sub,onClick,kind='artist',id=''){
     document.querySelectorAll('.match-card.selected').forEach(card=>card.classList.remove('selected'));
     b.classList.add('selected');
     onClick();
-    $('playlistSection').scrollIntoView({behavior:'smooth',block:'start'});
+    $('playlistSection').scrollIntoView({behavior:scrollMotion(),block:'start'});
   };
   holder.append(b,edit);
   if(pinnedArt[key])showImage(pinnedArt[key]);
@@ -939,7 +982,7 @@ async function searchMatches(term){if(sourceMode()==='local'){await chooseArtist
 try{const data=await getJSON('https://musicbrainz.org/ws/2/artist/?query='+encodeURIComponent('artist:"'+term+'"')+'&fmt=json&limit=15');if(matchRequest!==S.matchRequest)return;for(const artist of (data.artists||[])){const name=artist.name||'';let detail=[artist.type,artist.country,artist.disambiguation].filter(Boolean).join(' · ')||'MusicBrainz artist';list.append(sourceChoice(name,detail,()=>chooseArtist(name,artist.id),'artist',artist.id));count++}}catch(e){if(matchRequest!==S.matchRequest)return;show('MusicBrainz artist lookup was unavailable; showing Archive matches where possible.',true)}
 try{const query='mediatype:audio AND ('+'title:('+term+') OR creator:('+term+'))';const url='https://archive.org/advancedsearch.php?q='+encodeURIComponent(query)+'&fl[]=identifier&fl[]=title&fl[]=creator&rows=12&page=1&output=json';const data=await getJSON(url);if(matchRequest!==S.matchRequest)return;for(const d of data.response?.docs||[]){const name=Array.isArray(d.title)?d.title[0]:d.title;const creator=Array.isArray(d.creator)?d.creator.join(', '):d.creator||'Unknown creator';list.append(sourceChoice(name||d.identifier,'Internet Archive recording · '+creator,()=>chooseArchiveItem(d),'item',d.identifier));count++}}catch(e){if(matchRequest!==S.matchRequest)return;if(!count)show('The online search services are unavailable. You can still add local audio files.',true)}
 if(!count){list.append(sourceChoice('Search Internet Archive for '+term,'Try an exact creator search',()=>chooseArtist(term,null)))}else show('Choose a matching artist or recording above to build your playlist.')}
-async function chooseArtist(name,mbid){window.ArtistWaveStudio?.close();const selection=++S.matchRequest;S.requestId++;S.loading=false;audio.pause();audio.removeAttribute('src');clearAlbumQueue();S.artist=name;S.archiveItemView=false;S.providerChecked={};S.providerBusy={};S.providerErrors={};S.artistMbid=mbid||null;S.unavailable=[];S.catalogResolved=false;S.catalogLoading=false;S.catalogRequest++;S.page=0;S.tracks=[];S.onlineTracks=[];S.selected=-1;S.view='discover';$('matchList').querySelectorAll('button').forEach(x=>x.classList.remove('selected'));$('playlistHeading').textContent=name;$('externalSearch').hidden=false;$('externalSearch').href='https://www.youtube.com/results?search_query='+encodeURIComponent(name+' music');$('externalSearch').textContent='Search '+name+' on YouTube ↗';show(sourceMode()==='local'?'Searching your local music for '+name+'…':'Searching publicly available recordings attributed to '+name+'…');rebuildPlaylist();if(sourceMode()!=='local')await loadOnlineProviders(name,selection);else show(S.tracks.length+' local track(s) found for '+name+'.');if(selection===S.matchRequest&&sourceMode()!=='local'&&$('showUnavailable').checked)await loadUnavailable()}
+async function chooseArtist(name,mbid){window.ArtistWaveStudio?.close();const selection=++S.matchRequest;S.requestId++;S.loading=false;audio.pause();audio.removeAttribute('src');clearAlbumQueue();S.artist=name;S.archiveItemView=false;S.providerChecked={};S.providerBusy={};S.providerErrors={};S.artistMbid=mbid||null;S.unavailable=[];S.catalogResolved=false;S.catalogLoading=false;S.catalogRequest++;S.page=0;S.tracks=[];S.onlineTracks=[];S.selected=-1;S.view='discover';$('matchList').querySelectorAll('button').forEach(x=>x.classList.remove('selected'));$('playlistHeading').textContent=name;$('externalSearch').hidden=false;$('externalSearch').href='https://www.youtube.com/results?search_query='+encodeURIComponent(name+' music');$('externalSearch').textContent='Search '+name+' on YouTube ↗';show(sourceMode()==='local'?'Finding songs in your local music…':'Finding songs… 0 found so far.');rebuildPlaylist();if(sourceMode()!=='local')await loadOnlineProviders(name,selection);else show(S.tracks.length+' local song'+(S.tracks.length===1?'':'s')+' found.');if(selection===S.matchRequest&&sourceMode()!=='local'&&$('showUnavailable').checked)await loadUnavailable()}
 async function chooseArchiveItem(d){S.matchRequest++;const request=++S.requestId;S.loading=false;audio.pause();audio.removeAttribute('src');clearPlaybackRecovery();S.catalogRequest++;S.catalogResolved=false;S.catalogLoading=false;S.unavailable=[];clearAlbumQueue();S.archiveItemView=true;S.artistMbid=null;const name=Array.isArray(d.title)?d.title[0]:d.title||d.identifier;S.artist=Array.isArray(d.creator)?d.creator[0]:d.creator||name;S.page=0;S.selected=-1;S.tracks=[];S.onlineTracks=[];updatePlayer();$('playlistHeading').textContent=name;$('externalSearch').hidden=true;show('Loading recording: '+name);try{const tracks=await tracksFromItem(d.identifier,S.artist);if(request!==S.requestId)return;S.onlineTracks=dedupeTracks(tracks);rebuildPlaylist();show(S.tracks.length+' unique playable tracks found in this item.')}catch(e){if(request===S.requestId)show('Unable to load the selected recording: '+e.message,true)}if(request===S.requestId)$('loadMore').hidden=true}
 async function tracksFromItem(id,artist){
   const m=await getJSON('https://archive.org/metadata/'+encodeURIComponent(id));
@@ -964,6 +1007,7 @@ async function loadMore(){
   const request=++S.requestId,artist=S.artist;
   delete S.providerErrors.archive;
   S.loading=true;$('loadMore').hidden=true;
+  refreshProviderStatus();
   const page=++S.page;
   try{
     let q='mediatype:audio AND creator:("'+artist.replace(/"/g,'')+'")';
@@ -985,7 +1029,7 @@ async function loadMore(){
     refreshProviderStatus();
     render();
   }catch(e){if(request===S.requestId){S.page=Math.max(0,S.page-1);S.providerErrors.archive=e.message;refreshProviderStatus()}}
-  finally{if(request===S.requestId)S.loading=false}
+  finally{if(request===S.requestId){S.loading=false;refreshProviderStatus()}}
 }
 
 // Browse the MusicBrainz recording catalog only when requested. These are title
@@ -1046,9 +1090,9 @@ $('smartQueueClear').addEventListener('click',()=>{
   $('smartQueueStatus').textContent='Upcoming queue cleared. The current song keeps playing.';
 });
 $('albumFoldAll').addEventListener('click',toggleAllAlbums);
-$('shuffleButton').onclick=()=>{clearAlbumQueue();S.shuffle=!S.shuffle;$('shuffleButton').classList.toggle('active',S.shuffle)};
+$('shuffleButton').onclick=()=>{clearAlbumQueue();S.shuffle=!S.shuffle;$('shuffleButton').classList.toggle('active',S.shuffle);updatePlayer()};
 $('shuffleAll').onclick=()=>{clearAlbumQueue();S.shuffle=true;$('shuffleButton').classList.add('active');next(1)};
-$('repeatButton').onclick=()=>{S.repeat=(S.repeat+1)%3;$('repeatButton').title=['Repeat: off','Repeat: all','Repeat: one'][S.repeat];$('repeatButton').classList.toggle('active',S.repeat>0)};
+$('repeatButton').onclick=()=>{S.repeat=(S.repeat+1)%3;$('repeatButton').title=['Repeat: off','Repeat: all','Repeat: one'][S.repeat];$('repeatButton').classList.toggle('active',S.repeat>0);updatePlayer()};
 $('favoriteCurrent').onclick=()=>favorite(current());
 $('volumeBar').oninput=e=>audio.volume=Number(e.target.value)/100;audio.volume=.75;
 $('seekBar').oninput=e=>{if(Number.isFinite(audio.duration))audio.currentTime=audio.duration*Number(e.target.value)/1000};
@@ -1062,13 +1106,13 @@ audio.onwaiting=()=>{if(S.playCandidates.length&&!audio.paused)queueBufferCheck(
 audio.onstalled=()=>{if(S.playCandidates.length&&!audio.paused)queueBufferCheck(S.playbackToken)};audio.onended=()=>{if(S.repeat===2){audio.currentTime=0;audio.play().catch(()=>{})}else if(S.smartQueue.length||S.smartOnDeck){if(!next(1))updatePlayer()}else if(S.albumQueue.length){if(!nextAlbumTrack(1))updatePlayer()}else if(S.repeat===1||S.selected<S.tracks.length-1)next(1);else updatePlayer()};
 $('albumJumpSelect').addEventListener('change',event=>{
   const target=document.getElementById(event.target.value);
-  if(target)target.scrollIntoView({behavior:'smooth',block:'start'});
+  if(target)target.scrollIntoView({behavior:scrollMotion(),block:'start'});
 });
 $('recentNav').onclick=()=>{
   window.ArtistWaveStudio?.close();clearAlbumQueue();S.view='recent';
   $('locationName').textContent='Recently Played';
   $('playlistHeading').textContent='Recently played';
-  render();$('playlistSection').scrollIntoView({behavior:'smooth',block:'start'});
+  render();$('playlistSection').scrollIntoView({behavior:scrollMotion(),block:'start'});
 };
 $('discoverNav').onclick=()=>{window.ArtistWaveStudio?.close();clearAlbumQueue();S.view='discover';$('locationName').textContent='Discover';render()};
 $('favoritesNav').onclick=()=>{window.ArtistWaveStudio?.close();clearAlbumQueue();S.view='favorites';$('locationName').textContent='Favorites';$('playlistHeading').textContent='Your favorites';render()};
@@ -1080,7 +1124,7 @@ $('forgetFolderNav').onclick=async()=>{
   $('folderSummary').textContent=S.local.length+' local track(s) indexed this session';
   show('Saved folder access forgotten. Existing indexed files remain until you reload.');
 };
-$('folderInput').addEventListener('change',async event=>{const files=Array.from(event.target.files||[]);event.target.value='';await importLocalFiles(files,{folder:true})});
+$('folderInput').addEventListener('change',async event=>{const files=Array.from(event.target.files||[]);event.target.value='';if(files.length)await importLocalFiles(files,{folder:true})});
 $('sourceMode').addEventListener('change',()=>{
   window.ArtistWaveCloud?.changed();
   rebuildPlaylist();
@@ -1374,8 +1418,9 @@ function chooseCatalogArtist(genre,section,era,name){
   $('artistInput').value=name;
   $('matchPanel').hidden=true;
   chooseArtist(name,null);
+  $('genreTree').querySelectorAll('.genre-sidebar-artist').forEach(button=>{if(norm(button.textContent)===norm(name))button.setAttribute('aria-current','true');else button.removeAttribute('aria-current')});
   $('locationName').textContent=browsePath(genre,section,era)+' / '+name;
-  $('playlistSection').scrollIntoView({behavior:'smooth',block:'start'});
+  $('playlistSection').scrollIntoView({behavior:scrollMotion(),block:'start'});
 }
 function toggleBrowseGenre(genre){
   expandedGenre.name=expandedGenre.name===genre.name?null:genre.name;
@@ -1413,7 +1458,7 @@ function showBrowseEra(genre,section,era){
     list.append(card);
   }
   $('locationName').textContent=path;
-  requestAnimationFrame(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}));
+  requestAnimationFrame(()=>panel.scrollIntoView({behavior:scrollMotion(),block:'start'}));
 }
 function genreSearchMatches(genre,query){
   if(!query)return true;
@@ -1492,7 +1537,8 @@ function renderGenreTree(){
     const group=document.createElement('div');group.className='genre-node';
     const open=Boolean(query)||expandedGenre.name===genre.name;
     const button=document.createElement('button');button.type='button';button.className='genre-top-button';
-    button.textContent=genre.icon+'  '+genre.name;
+    const icon=document.createElement('span');icon.className='genre-glyph';icon.setAttribute('aria-hidden','true');icon.textContent=genre.icon;
+    const label=document.createElement('span');label.className='genre-name';label.textContent=genre.name;button.append(icon,label);
     button.setAttribute('aria-expanded',String(open));
     button.onclick=()=>toggleBrowseGenre(genre);
     group.append(button);
@@ -1522,7 +1568,7 @@ function renderGenreTree(){
               list.setAttribute('aria-label','Artists: '+browsePath(genre,section,era));
               for(const [name] of artists){
                 const artist=document.createElement('button');artist.type='button';artist.className='genre-sidebar-artist';
-                artist.textContent=name;artist.onclick=()=>chooseCatalogArtist(genre,section,era,name);
+                artist.textContent=name;if(norm(name)===norm(S.artist))artist.setAttribute('aria-current','true');artist.onclick=()=>chooseCatalogArtist(genre,section,era,name);
                 list.append(artist);
               }
               eraGroup.append(list);

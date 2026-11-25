@@ -85,9 +85,9 @@
   }
   function open(){
     if(popup&&!popup.closed){popup.focus();return}
-    // Browsers control actual window sizing; 380px is a request, not a guarantee.
+    // Browsers control actual window sizing; 430px is a request, not a guarantee.
     const height=Math.max(540,Math.round(window.screen?.availHeight||window.innerHeight||780));
-    const width=380;
+    const width=430;
     const left=Math.max(0,Math.round((window.screen?.availWidth||1000)-width-26));
     popup=window.open('mini-player.html','artistwave-mini-player',
       'popup=yes,width='+width+',height='+height+',left='+left+',top=0,resizable=yes,scrollbars=yes');

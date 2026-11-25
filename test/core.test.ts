@@ -34,13 +34,13 @@ test('parseProbe keeps studio/youtube and rejects unknown modes', () => {
 
 import { computeMiniBounds } from '../dist/core.js'
 
-test('computeMiniBounds caps width at 380 and pins to the right edge', () => {
+test('computeMiniBounds caps width at 430 and pins to the right edge', () => {
   const work = { x: 0, y: 0, width: 1920, height: 1040 }
   const restore = { x: 100, y: 100, width: 1180, height: 780 }
   const b = computeMiniBounds(work, restore)
-  assert.equal(b.width, 380)
+  assert.equal(b.width, 430)
   assert.equal(b.height, 1040)
-  assert.equal(b.x, 1920 - 380)
+  assert.equal(b.x, 1920 - 430)
   assert.equal(b.y, 0)
 })
 
@@ -49,7 +49,7 @@ test('computeMiniBounds clamps height to the work area and respects offset monit
   const restore = { x: 2000, y: 100, width: 1180, height: 900 }
   const b = computeMiniBounds(work, restore)
   assert.equal(b.height, 720)
-  assert.equal(b.x, 1920 + 1280 - 380)
+  assert.equal(b.x, 1920 + 1280 - 430)
   assert.equal(b.y, 0)
 })
 

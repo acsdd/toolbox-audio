@@ -56,6 +56,16 @@ app.whenReady().then(async () => {
 
   const failures = []
   const expect = (cond, msg) => { if (!cond) failures.push(msg) }
+  const fullWorkArea = screen.getDisplayMatching(win.getBounds()).workArea
+  expect(win.getBounds().height === fullWorkArea.height && win.getBounds().y === fullWorkArea.y, 'Full player does not fill screen work area height')
+  const themes = await frame(win).executeJavaScript(`(() => {
+    const select=document.getElementById('themeSelect');
+    const choices=[...select.options].map(option=>option.value);
+    select.value='bugs';select.dispatchEvent(new Event('change'));
+    return {choices,selected:document.documentElement.dataset.theme};
+  })()`)
+  expect(['night','day','bright-night','ocean','plum','bugs','daffy','tweety','sylvester','taz','roadrunner'].every(theme=>themes.choices.includes(theme)), 'Theme choices missing')
+  expect(themes.selected === 'bugs', 'Theme selection failed')
 
   const top = await frame(win).executeJavaScript(
     `({ url: location.href, framed: window.self !== window.top, api: typeof window.api, proc: typeof window.process })`,
@@ -94,7 +104,7 @@ app.whenReady().then(async () => {
   await frame(win).executeJavaScript(`document.getElementById('openMiniPlayer').click()`, false)
   await delay(900)
   const miniWidth = win.getBounds().width
-  expect(miniWidth === 380, `Mini mode width is ${miniWidth}`)
+  expect(miniWidth === 430, `Mini mode width is ${miniWidth}`)
   expect(win.getBounds().x + miniWidth === workArea.x + workArea.width, 'Mini mode is not aligned to the right edge of the work area')
   expect(win.getBounds().height === workArea.height, 'Mini mode does not fill the work area height')
   expect(win.getBounds().y === workArea.y, 'Mini mode does not start at the top of the work area')
@@ -106,10 +116,14 @@ app.whenReady().then(async () => {
     const doc = document.getElementById('miniPlayerFallbackFrame').contentDocument
     const pin = doc.getElementById('miniAlwaysOnTop')
     const playlists = doc.getElementById('miniPlaylists')
-    return { pinVisible: !pin.hidden, playlistSelector: playlists.tagName === 'SELECT' }
+    const theme = doc.querySelector('.theme-select-label'); const close = doc.querySelector('.mini-close'); const header = doc.querySelector('.mini-top'); const t = theme.getBoundingClientRect(), c = close.getBoundingClientRect(), h = header.getBoundingClientRect();
+    return { pinVisible: !pin.hidden, playlistSelector: playlists.tagName === 'SELECT', themeFits: t.left >= h.left && t.right <= c.left && c.right <= h.right }
   })()`)
+  expect(miniControls.themeFits, 'Mini theme selector overlaps or extends outside the header')
   expect(miniControls.pinVisible, 'Always-on-top button is hidden')
   expect(miniControls.playlistSelector, 'Playlist selector is missing')
+  const miniTheme = await frame(win).executeJavaScript("document.getElementById('miniPlayerFallbackFrame').contentDocument.documentElement.dataset.theme")
+  expect(miniTheme === 'bugs', 'Mini player did not inherit selected theme')
   await frame(win).executeJavaScript("document.getElementById('miniPlayerFallbackFrame').contentDocument.getElementById('miniAlwaysOnTop').click()")
   await delay(700)
   expect(!win.isAlwaysOnTop(), 'Always-on-top button did not turn pinning off')

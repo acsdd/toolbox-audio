@@ -97,7 +97,7 @@ server.listen(0,'127.0.0.1',async()=>{
     await waitFor(win,"document.getElementById('audio').currentTime >= 5")
     await win.webContents.executeJavaScript("document.getElementById('openMiniPlayer').click()")
     await delay(800)
-    assert.equal(win.getBounds().width,380)
+    assert.equal(win.getBounds().width,430)
     const title = await win.webContents.executeJavaScript("document.getElementById('miniPlayerFallbackFrame').contentDocument.getElementById('miniTitle').textContent")
     assert.equal(title,'Plex test track')
     await win.webContents.executeJavaScript("window.AudioWavePlex.disconnect()")

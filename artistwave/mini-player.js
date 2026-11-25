@@ -100,7 +100,11 @@
     $('miniFavorite').classList.toggle('selected',state.favorite);
     $('miniFavorite').firstChild.textContent=state.favorite?'♥ ':'♡ ';
     $('miniShuffle').classList.toggle('active',state.shuffle);
+    $('miniShuffle').setAttribute('aria-pressed',String(Boolean(state.shuffle)));
     $('miniRepeat').classList.toggle('active',state.repeat!=='Repeat: off');
+    $('miniRepeat').setAttribute('aria-pressed',String(state.repeat!=='Repeat: off'));
+    $('miniRepeat').setAttribute('aria-label',state.repeat||'Repeat off');
+    document.body.classList.toggle('is-playing',Boolean(state.playing));
     $('miniRepeat').title=state.repeat;
     $('miniCurrent').textContent=clock(state.currentTime);
     $('miniDuration').textContent=clock(state.duration);

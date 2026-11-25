@@ -27,7 +27,7 @@
       <form id="navidromeSearch" class="navidrome-search"><label for="navidromeQuery">Find albums</label><input id="navidromeQuery" type="search" placeholder="Album or artist" maxlength="200" /><button type="submit">Search</button><button id="navidromeRecent" type="button">Recently added</button></form>
       <div id="navidromeAlbums" class="navidrome-albums"></div>
       <button id="navidromeMore" type="button" hidden>Load more albums</button>
-      <section id="navidromeAlbum" hidden><div class="navidrome-heading"><h3 id="navidromeAlbumTitle"></h3><button id="navidromePlayAlbum" type="button">▶ Play album</button></div><div id="navidromeTracks"></div></section>
+      <section id="navidromeAlbum" hidden><div class="navidrome-heading"><h3 id="navidromeAlbumTitle"></h3><button id="navidromePlayAlbum" type="button">▶ Play album</button><button id="navidromeSaveAlbum" type="button">＋ Add album to playlist</button></div><div id="navidromeTracks"></div></section>
     </section>`;
   document.body.append(dialog);
   const $=id=>dialog.querySelector('#'+id);
@@ -157,4 +157,5 @@
   $('navidromeMore').onclick=()=>run(()=>loadAlbums());
   $('navidromeSection').onchange=()=>run(()=>loadAlbums(true));
   $('navidromePlayAlbum').onclick=()=>play(0);
+  $('navidromeSaveAlbum').onclick=()=>{dialog.close();window.ArtistWavePlaylists?.addAlbum(tracks,albumName)};
 })();

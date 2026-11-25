@@ -90,6 +90,12 @@ server.listen(0,'127.0.0.1',async()=>{
     await waitFor(win,"document.querySelectorAll('.navidrome-album').length > 0 && !document.querySelector('.navidrome-album').disabled")
     await win.webContents.executeJavaScript("document.querySelector('.navidrome-album').click()")
     await waitFor(win,"document.querySelectorAll('.navidrome-track').length === 1 && !document.getElementById('navidromePlayAlbum').disabled")
+    await win.webContents.executeJavaScript("document.getElementById('navidromeSaveAlbum').click();document.getElementById('playlistPickerCreate').click();document.getElementById('playlistName').value='Album smoke';document.getElementById('playlistDialogForm').requestSubmit()")
+    await waitFor(win,"window.ArtistWavePlaylists.list().some(p=>p.name==='Album smoke'&&p.count===1)")
+    await win.webContents.executeJavaScript("document.getElementById('navidromeOpen').click()")
+    await waitFor(win,"document.querySelectorAll('.navidrome-album').length > 0 && !document.querySelector('.navidrome-album').disabled")
+    await win.webContents.executeJavaScript("document.querySelector('.navidrome-album').click()")
+    await waitFor(win,"document.querySelectorAll('.navidrome-track').length === 1 && !document.getElementById('navidromePlayAlbum').disabled")
     if(process.env.NAVIDROME_SMOKE_SCREENSHOT){
       fs.writeFileSync(process.env.NAVIDROME_SMOKE_SCREENSHOT,(await win.webContents.capturePage()).toPNG())
     }
@@ -114,7 +120,7 @@ server.listen(0,'127.0.0.1',async()=>{
     await waitFor(win,"document.getElementById('audio').currentTime >= 5 && !document.getElementById('audio').paused")
     await win.webContents.executeJavaScript("document.getElementById('openMiniPlayer').click()")
     await delay(800)
-    assert.equal(win.getBounds().width,380)
+    assert.equal(win.getBounds().width,430)
     const title = await win.webContents.executeJavaScript("document.getElementById('miniPlayerFallbackFrame').contentDocument.getElementById('miniTitle').textContent")
     assert.equal(title,'Test track')
     await win.webContents.executeJavaScript("window.AudioWaveNavidrome.disconnect()")
