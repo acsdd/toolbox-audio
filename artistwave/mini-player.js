@@ -6,7 +6,7 @@
   let host=null,lastQueue='',lastCover='',draggingSeek=false,draggingVolume=false,libraryLimit=150,upNextLimit=100;
   const miniView=$('miniViewToggle');
   const videoFrame=$('miniYoutubeFrame');
-  const videoControls=window.ArtistWaveYouTubeControls.bind(videoFrame,$('miniYoutube'));
+  const videoControls=window.ArtistWaveYouTubeControls.bind(videoFrame,$('miniYoutube'),undefined,()=>connect()?.videoEnded?.());
   function stopVideo(){videoControls.reset();videoFrame.removeAttribute('src');$('miniYoutube').hidden=true;document.body.classList.remove('youtube-mini')}
   function returnVideo(){const position=videoControls.position();stopVideo();try{connect()?.returnVideo?.(position)}catch{}}
   window.ArtistWaveMiniVideo={stop:stopVideo};

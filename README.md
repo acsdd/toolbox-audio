@@ -14,6 +14,8 @@ Run the portable EXE or install the Windows x64 setup package. End users do not 
 
 Under **Local music**, choose Navidrome or Plex. Navidrome accepts your server URL and account credentials. Plex opens your browser for account authorization and then offers the server's music libraries. Browse albums, search, play tracks and save them to playlists.
 
+Google sign-in is optional. On Windows, AudioWave can remember the account across restarts and app updates by storing a refresh token encrypted for the current Windows account. After upgrading from a version that did not save sessions, sign in once to enable this. Signing out removes the saved session; a revoked or expired grant may require signing in again. Browser sessions remain separate.
+
 Choose **Appearance → Audio output** to select speakers or headphones for the main player, Mini player, and Showdance. The choice is saved on this device; if it is disconnected, the player falls back to the system default and restores it when available. YouTube's embedded player uses its own output settings.
 
 The player's Mini button switches the same playback session into a full-height, 380px window at the right screen edge. The visible pin button toggles always-on-top. Select saved playlists directly in Mini; Full restores the previous window. The optional first-party widget manager controls the menu shortcut. No third-party plugins are supported.
@@ -26,6 +28,7 @@ Requires Node.js 22+ on Windows for the desktop checks and packaging.
 npm ci
 npm start
 npm run typecheck
+npm run check:privacy
 npm test
 npm run smoke
 ```
@@ -48,10 +51,14 @@ The `v*` tag workflow builds an installer and portable EXE, generates SHA256 che
 
 ## Security and privacy
 
-The player is sandboxed with context isolation and no Node integration. Narrow, main-frame-validated bridges expose Google sign-in and library operations. Google tokens stay in memory; NAS connection credentials are encrypted with Windows safeStorage. Native handlers attach credentials to media requests so playlist URLs contain only opaque connection/media IDs. Disconnect forgets the saved connection.
+The player is sandboxed with context isolation and no Node integration. Narrow, main-frame-validated bridges expose Google sign-in and library operations. Google access tokens stay in memory; the desktop refresh token and NAS credentials are encrypted with Windows safeStorage. Refresh tokens are handled in the main process and are not placed in the page or Git. Native handlers attach credentials to media requests so playlist URLs contain only opaque connection/media IDs. Signing out or disconnecting forgets the corresponding saved connection.
 
 The bundled UI uses the existing ArtistWave HTTPS origin to preserve local library storage. The shell sends no telemetry. Chosen providers receive requests required for playback and account features. See [SECURITY.md](SECURITY.md), [verification](docs/VERIFICATION.md), and [widget boundaries](docs/WIDGETS.md).
 
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+### Shared YouTube search key
+
+For local portable builds, put `YOUTUBE_DATA_API_KEY=...` in the ignored `.env.youtube.local` file. The release workflow accepts the `YOUTUBE_DATA_API_KEY` repository secret. The key is included in the built application and can be extracted; use a dedicated key restricted to YouTube Data API. Users can still configure their own key. With no shared key, YouTube search continues to accept a user-provided key.

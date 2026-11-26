@@ -5,6 +5,12 @@ out/
 .tmp/
 *.log
 config/google-oauth.json
+config/client_secret*.json
+config/credentials.json
+config/token.json
+google-session.bin
 .env
 .env.*
 !.env.example
+
+artistwave/youtube-bundled-config.js

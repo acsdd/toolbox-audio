@@ -36,7 +36,7 @@ test('desktop sign-in validates state and exchanges the code with matching PKCE'
       return { ok: true, json: async () => ({ access_token: 'test-token', expires_in: 3600, refresh_token: 'discard' }) }
     }
   })
-  assert.deepEqual(token, { access_token: 'test-token', expires_in: 3600 })
+  assert.deepEqual(token, { access_token: 'test-token', expires_in: 3600, refresh_token: 'discard' })
 })
 
 test('desktop sign-in releases the listener when cancelled', async () => {

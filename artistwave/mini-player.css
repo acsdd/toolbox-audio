@@ -14,7 +14,10 @@ button:focus-visible,input:focus-visible{outline:2px solid #d9ffa4;outline-offse
 .mini-youtube .youtube-controls label{display:flex;align-items:center;gap:4px}
 .mini-youtube .youtube-controls input[data-yt="volume"]{width:48px}
 .mini-youtube .youtube-controls [data-yt="time"]{white-space:nowrap}
-body.youtube-mini .mini-main> :not(.mini-youtube){display:none!important}
+body.youtube-mini .mini-main> :not(.mini-youtube):not(.mini-playlists):not(.mini-queue){display:none!important}
+body.youtube-mini .mini-playlists{margin-top:12px}
+body.youtube-mini .mini-queue{min-height:100px}
+body.youtube-mini .mini-youtube{flex-shrink:0}
 body.youtube-mini .mini-main{overflow:auto}
 .mini-shell{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh;max-width:480px;margin:0 auto;background:radial-gradient(ellipse at 55% 120px,#24463a 0%,transparent 48%),linear-gradient(#0f1d21,#10191b 65%);border-left:1px solid #294034;border-right:1px solid #294034}
 .mini-top{display:flex;align-items:center;gap:8px;min-height:67px;padding:14px 21px;border-bottom:1px solid #345448}

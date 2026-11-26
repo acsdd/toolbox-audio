@@ -14,7 +14,7 @@
     });
     return apiPromise;
   }
-  function bind(frame,controls,onUpdate=()=>{}){
+  function bind(frame,controls,onUpdate=()=>{},onEnded=()=>{}){
     let player=null,generation=0,timer=null,ready=false;
     const toggle=controls.querySelector('[data-yt="toggle"]'),seek=controls.querySelector('[data-yt="seek"]');
     const volume=controls.querySelector('[data-yt="volume"]'),time=controls.querySelector('[data-yt="time"]');
@@ -32,7 +32,7 @@
     async function attach(){
       reset();const expected=generation;
       try{const yt=await api();if(expected!==generation||!frame.getAttribute('src'))return;
-        player=new yt.Player(frame,{events:{onReady:()=>{if(expected!==generation)return;controls.dataset.playerReady='true';delete controls.dataset.playerError;ready=true;toggle.disabled=false;volume.disabled=false;update();timer=setInterval(update,500)},onStateChange:update,onError:event=>{if(expected===generation){reset();controls.dataset.playerError=String(event.data)}}}});
+        player=new yt.Player(frame,{events:{onReady:()=>{if(expected!==generation)return;controls.dataset.playerReady='true';delete controls.dataset.playerError;ready=true;toggle.disabled=false;volume.disabled=false;update();timer=setInterval(update,500)},onStateChange:event=>{update();if(expected===generation&&event.data===0)onEnded()},onError:event=>{if(expected===generation){reset();controls.dataset.playerError=String(event.data)}}}});
       }catch{reset()}
     }
     const command=(name,value)=>{if(!ready)return;try{if(name==='toggle')player.getPlayerState()===1?player.pauseVideo():player.playVideo();else if(name==='seek')player.seekTo(player.getDuration()*value,true);else if(name==='volume')player.setVolume(value);else if(name==='next')player.nextVideo();else if(name==='previous')player.previousVideo()}catch{}};

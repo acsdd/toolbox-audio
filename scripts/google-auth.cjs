@@ -68,7 +68,7 @@ function signIn({ openExternal, signal, fetchToken = fetch, timeoutMs = 180000, 
           throw new Error('Google could not complete sign-in. Please try again.')
         }
         res.end('Google sign-in completed. Return to AudioWave to finish loading your library.')
-        finish(null, { access_token: token.access_token, expires_in: token.expires_in })
+        finish(null, { access_token: token.access_token, expires_in: token.expires_in, refresh_token: token.refresh_token })
       } catch (error) {
         res.writeHead(502).end('Sign-in failed. Return to AudioWave and try again.')
         finish(new Error('Google sign-in could not be completed. Please try again.'))
@@ -93,4 +93,4 @@ function signIn({ openExternal, signal, fetchToken = fetch, timeoutMs = 180000, 
   })
 }
 
-module.exports = { signIn }
+module.exports = { signIn, readCredentials }

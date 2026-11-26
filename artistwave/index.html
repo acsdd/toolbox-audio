@@ -137,10 +137,10 @@
               <button type="submit">Search videos</button></div>
           </form>
           <details class="youtube-api-setup" id="youtubeApiSetup">
-            <summary>YouTube search setup</summary>
+            <summary>Use your own YouTube API key</summary>
             <label for="youtubeApiKey">YouTube Data API key</label>
             <div class="youtube-link-row"><input id="youtubeApiKey" type="password" autocomplete="off" placeholder="Paste your API key" /><button id="youtubeApiSave" type="button">Save key</button></div>
-            <small>Create a key in <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer">Google Cloud Credentials</a>, enable YouTube Data API v3, and restrict the key to your site. The key is stored only in this browser.</small>
+            <small>Create a key in <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer">Google Cloud Credentials</a>, enable YouTube Data API v3, and restrict the key to your site. Your optional key is stored only in this browser; desktop builds may include a shared key.</small>
           </details>
           <div id="youtubeMessage" class="youtube-message" role="status" aria-live="polite">Search here to browse YouTube videos, then play a selection in the official player.</div>
           <div id="youtubeSearchResults" class="youtube-search-results" aria-label="YouTube search results" aria-live="polite"></div>
@@ -201,6 +201,7 @@
       <section class="hero" id="artistWaveHero"><div class="hero-copy"><div class="eyebrow"><span class="little-star">✳</span> THE MUSIC IS YOURS TO CHOOSE</div><h1>One artist.<br><em>Every track.</em></h1><p>No noise. No distractions. Type an artist or band and build a listening session around them.</p></div><div class="hero-art" aria-hidden="true"><div class="orb orb-a"></div><div class="orb orb-b"></div><div class="vinyl"><div class="vinyl-ring ring-one"></div><div class="vinyl-ring ring-two"></div><div class="vinyl-ring ring-three"></div><div class="record-label"><div class="record-hole"></div></div></div><div class="star star-one">✳</div><div class="star star-two">✧</div></div></section>
 
       <section class="search-section" id="discoverSection"><div class="getting-started" id="gettingStarted" hidden><div><strong>Getting started</strong><p>Search for an artist, add a music folder, save songs to a playlist, or open Mini player.</p></div><button type="button" id="dismissGettingStarted" aria-label="Dismiss getting started">×</button></div><div class="section-heading"><div><div class="overline">01 / FIND YOUR SOUND</div><h2>Who are we listening to?</h2></div></div><form id="searchForm" class="search-form"><label class="search-box" for="artistInput"><span class="search-icon">⌕</span><input id="artistInput" name="artist" type="search" placeholder="e.g. Grateful Dead, Nina Simone, Miles Davis..." autocomplete="off" maxlength="100" required /><span class="key-hint">ENTER ↵</span></label><button class="primary-button" id="searchButton" type="submit">Find music <span>↗</span></button></form><div class="search-options"><label class="source-select-label" for="sourceMode"><span>Music sources</span><select id="sourceMode" aria-label="Playlist source"><option value="both" selected>Local + online</option><option value="local">Local only</option><option value="online">Online only</option></select></label><label class="checkbox"><input type="checkbox" id="includeLive" checked/><span>Include live recordings</span></label><button type="button" class="help-link" id="showGettingStarted">Getting started</button></div><div id="activeFilters" class="active-filters" aria-label="Active filters" hidden></div><nav id="browseTrail" class="browse-trail" aria-label="Music browsing path" hidden></nav><fieldset class="provider-panel" id="providerPanel"><legend>Online audio providers</legend>
+  <label class="provider-choice"><input type="checkbox" id="providerYouTube" checked /><span>YouTube · video</span></label>
   <label class="provider-choice"><input type="checkbox" id="providerArchive" checked /><span>Internet Archive</span></label>
   <label class="provider-choice"><input type="checkbox" id="providerAudius" checked /><span>Audius</span></label>
   <label class="provider-choice"><input type="checkbox" id="providerJamendo" /><span>Jamendo</span></label>
@@ -273,6 +274,8 @@
   <script src="app.js" defer></script>
   <script src="studio.js" defer></script>
   <script src="youtube-controls.js" defer></script>
+  <script src="youtube-bundled-config.js" defer></script>
+  <script src="youtube-albums.js" defer></script>
   <script src="navigation.js" defer></script>
   <script src="playlists.js" defer></script>
   <script src="mini-player-host.js" defer></script>

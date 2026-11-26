@@ -16,6 +16,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm }
       - run: npm ci
+      - run: npm run check:privacy
       - run: npm run typecheck
       - run: npm test
       - uses: actions/cache@v4
@@ -31,6 +32,11 @@ jobs:
           $oauth = $env:GOOGLE_DESKTOP_OAUTH_JSON | ConvertFrom-Json
           if (-not $oauth.client_id -or -not $oauth.client_secret) { throw 'Invalid desktop OAuth configuration' }
           $env:GOOGLE_DESKTOP_OAUTH_JSON | Set-Content -Encoding utf8 config/google-oauth.json
+      - name: Prepare optional YouTube search key
+        shell: pwsh
+        env:
+          YOUTUBE_DATA_API_KEY: ${{ secrets.YOUTUBE_DATA_API_KEY }}
+        run: node scripts/prepare-youtube-key.cjs artistwave/youtube-bundled-config.js
       - name: Package installers
         shell: pwsh
         env:

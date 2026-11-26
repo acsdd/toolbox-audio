@@ -6,7 +6,9 @@ if (process.isMainFrame && location.origin === 'https://acsdd.github.io' &&
   contextBridge.exposeInMainWorld('AudioWaveOutputs', { list: () => ipcRenderer.invoke('audiowave:outputs:list') })
   contextBridge.exposeInMainWorld('AudioWaveAuth', {
     signIn: () => ipcRenderer.invoke('audiowave:auth:sign-in'),
-    cancel: () => ipcRenderer.invoke('audiowave:auth:cancel')
+    cancel: () => ipcRenderer.invoke('audiowave:auth:cancel'),
+    restore: () => ipcRenderer.invoke('audiowave:auth:restore'),
+    forget: () => ipcRenderer.invoke('audiowave:auth:forget')
   })
   contextBridge.exposeInMainWorld('AudioWaveCcMixter', {
     search: artist => ipcRenderer.invoke('audiowave:ccmixter:search', artist)

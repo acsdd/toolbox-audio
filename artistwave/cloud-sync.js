@@ -4,7 +4,7 @@
 (function(){
   const $=id=>document.getElementById(id);
   const S={token:'',expires:0,subject:'',email:'',fileId:'',signed:false,busy:false,
-    dirty:false,timer:null,tokenClient:null,clientId:'',accountSnapshot:null,guestSnapshot:null};
+    dirty:false,timer:null,tokenClient:null,clientId:'',accountSnapshot:null,guestSnapshot:null,refreshPromise:null,generation:0};
   const CLOUD_FILE='artistwave-library-v1.json';
   const SCOPE='openid email profile https://www.googleapis.com/auth/drive.appdata';
   const BASE='https://www.googleapis.com/drive/v3/files';
@@ -132,7 +132,15 @@
     }}));
   }
   async function driveRequest(path,options={}){
-    if(!S.token||Date.now()>=S.expires-45000)throw Error('Google session expired. Sign in again to sync.');
+    if(!S.token)throw Error('Google session expired. Sign in again to sync.');
+    if(Date.now()>=S.expires-45000){
+      if(!window.AudioWaveAuth?.restore)throw Error('Google session expired. Sign in again to sync.');
+      const generation=S.generation;
+      if(!S.refreshPromise)S.refreshPromise=window.AudioWaveAuth.restore().finally(()=>{S.refreshPromise=null});
+      const token=await S.refreshPromise;
+      if(generation!==S.generation||!token?.access_token)throw Error('Google session expired. Sign in again to sync.');
+      S.token=token.access_token;S.expires=Date.now()+Math.max(60,Number(token.expires_in||3600))*1000;
+    }
     const headers=new Headers(options.headers||{});
     headers.set('Authorization','Bearer '+S.token);
     const response=await fetch(path.startsWith('https://')?path:BASE+path,{...options,headers});
@@ -215,9 +223,11 @@
     const data=S.guestSnapshot||{favorites:[],preferences:cleanPrefs({})};
     emitApply(data.favorites,data.preferences,data.recent,data.routines,data.customPlaylists);
   }
-  function logout(){
+  async function logout(){
     if(S.timer){clearTimeout(S.timer);S.timer=null}
     if(S.dirty){status('There are unsynced account changes. Select Sync now before signing out.',true);return}
+    S.generation++;
+    if(window.AudioWaveAuth?.forget){try{await window.AudioWaveAuth.forget()}catch{status('Could not remove the saved Google session. Please try signing out again.',true);return}}
     if(S.token&&window.google?.accounts?.oauth2?.revoke)window.google.accounts.oauth2.revoke(S.token,()=>{});
     S.token='';S.expires=0;S.subject='';S.email='';S.fileId='';S.signed=false;S.dirty=false;
     restoreGuest();updateUI();status('Signed out · guest library restored');
@@ -259,7 +269,7 @@
     if(S.busy)return;
     if(window.AudioWaveAuth){
       S.busy=true;updateUI();status('Complete Google sign-in in your browser…');
-      window.AudioWaveAuth.signIn().then(connect)
+      window.AudioWaveAuth.signIn().then(async token=>{await connect(token);if(!token.remembered)status('Connected, but this sign-in could not be saved for next time.',true)})
         .catch(error=>status('Sign-in failed: '+error.message,true))
         .finally(()=>{S.busy=false;updateUI()});
       return;
@@ -321,6 +331,12 @@
       status('Guest favorites imported. Syncing…');
     };
     updateUI();
+    if(window.AudioWaveAuth?.restore){
+      S.busy=true;updateUI();status('Restoring Google sign-in…');
+      window.AudioWaveAuth.restore().then(token=>token?connect(token):status('Guest · saved on this device'))
+        .catch(error=>status('Could not restore sign-in: '+error.message,true))
+        .finally(()=>{S.busy=false;updateUI()});
+    }
   }
   window.ArtistWaveCloud={init,changed:queueSync,isSignedIn:()=>S.signed,
     persistGuestFavorites:favs=>{if(!S.signed)safeWrite('artistwave:favorites',favs)},

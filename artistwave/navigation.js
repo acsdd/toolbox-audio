@@ -16,7 +16,7 @@
     if(Number.isFinite(status.volume))$('volumeBar').value=String(status.volume);
     $('playButton').textContent=status.playing?'Ⅱ':'▶';$('playButton').setAttribute('aria-label',status.playing?'Pause YouTube video':'Play YouTube video');
   }
-  const controls=window.ArtistWaveYouTubeControls.bind(frame,$('youtubePlayerRegion'),showYouTube);
+  const controls=window.ArtistWaveYouTubeControls.bind(frame,$('youtubePlayerRegion'),showYouTube,()=>window.ArtistWaveLibrary?.youtubeEnded?.());
   function beginYouTubeDisplay(){
     if(!savedMusicDisplay)savedMusicDisplay=Object.fromEntries(displayIds.map(id=>[id,$(id).textContent]));
     $('nowTitle').textContent='YouTube video';$('nowArtist').textContent='YouTube';$('playingSource').textContent='YOUTUBE';
@@ -32,6 +32,7 @@
     const event=id==='seekBar'||id==='volumeBar'?'input':'click';
     $(id).addEventListener(event,e=>{if(!savedMusicDisplay)return;e.preventDefault();e.stopImmediatePropagation();
       const value=action==='seek'?Number(e.target.value)/1000:action==='volume'?Number(e.target.value):undefined;
+      if((action==='next'||action==='previous')&&window.ArtistWaveLibrary?.advanceYouTube?.(action==='next'?1:-1))return;
       if(action!=='none')controls.command(action,value);
     },true);
   }
@@ -39,6 +40,18 @@
   let mode='audio';
   function readYouTubeApiKey(){try{return window.localStorage?.getItem(apiKeyStorage)||''}catch{return ''}}
   function writeYouTubeApiKey(key){try{if(key)window.localStorage?.setItem(apiKeyStorage,key);else window.localStorage?.removeItem(apiKeyStorage);return Boolean(window.localStorage)}catch{return false}}
+  async function youtubeSearch(query,limit,signal){
+    const personal=$('youtubeApiKey').value.trim()||readYouTubeApiKey();
+    const keys=[...new Set([personal,window.AudioWaveYouTubeKey||''].filter(Boolean))];
+    if(!keys.length)throw new Error('YouTube API key is missing');
+    let response;
+    for(const key of keys){
+      const params=new URLSearchParams({part:'snippet',type:'video',videoEmbeddable:'true',maxResults:String(limit),q:query,key});
+      response=await fetch('https://www.googleapis.com/youtube/v3/search?'+params,{signal});
+      if(response.ok||![400,403].includes(response.status))break;
+    }
+    return response;
+  }
   function parseYouTubeUrl(value){
     let url;
     try{url=new URL(String(value||'').trim())}catch{return null}
@@ -133,39 +146,57 @@
     }
   }
   async function searchYouTube(query){
-    const key=$('youtubeApiKey').value.trim()||readYouTubeApiKey();
+    const key=$('youtubeApiKey').value.trim()||readYouTubeApiKey()||window.AudioWaveYouTubeKey||'';
     if(!key){$('youtubeApiSetup').open=true;setYouTubeMessage('Add a YouTube Data API key in Search setup to show results here.',true);return}
     const results=$('youtubeSearchResults');results.replaceChildren();
     setYouTubeMessage('Searching YouTube…');
     try{
-      const params=new URLSearchParams({part:'snippet',type:'video',videoEmbeddable:'true',maxResults:'12',q:query,key});
-      const response=await fetch('https://www.googleapis.com/youtube/v3/search?'+params);
+      const response=await youtubeSearch(query,12);
       const data=await response.json();
       if(!response.ok)throw new Error(data.error?.message||'YouTube search could not be completed.');
       renderYouTubeResults(data.items||[]);
       setYouTubeMessage(data.items?.length?'Choose a video to play it here.':'No videos found. Try another search.');
     }catch(error){setYouTubeMessage(error.message||'YouTube search failed. Check the API key and try again.',true)}
   }
-  let discoverRequest=0,discoverAbort=null;
+  let discoverRequest=0,discoverAbort=null,lastYouTubeQuery='';
+  const providerYouTube=$('providerYouTube');
+  try{const saved=localStorage.getItem('artistwave:provider:youtube');if(saved!==null)providerYouTube.checked=saved==='true'}catch{}
+  function hideYouTubeResults(){discoverRequest++;discoverAbort?.abort();discoverAbort=null;$('youtubeDiscover').hidden=true;if(lastYouTubeQuery)window.ArtistWaveLibrary?.setYouTubeTracks?.([],lastYouTubeQuery)}
+  function showKeySetup(){openWidget();$('youtubeApiSetup').hidden=false;$('youtubeApiSetup').open=true;$('youtubeApiKey').focus()}
   async function searchYouTubeFromEntertainment(query){
     const request=++discoverRequest;
     discoverAbort?.abort();discoverAbort=null;
     const panel=$('youtubeDiscover'),results=$('youtubeDiscoverResults'),status=$('youtubeDiscoverStatus'),setup=$('youtubeDiscoverSetup');
     results.replaceChildren();setup.hidden=true;
-    if($('sourceMode').value==='local'){panel.hidden=true;return}
-    panel.hidden=false;
-    const key=$('youtubeApiKey').value.trim()||readYouTubeApiKey();
+    if($('sourceMode').value==='local'||!providerYouTube.checked){panel.hidden=true;return}
+    lastYouTubeQuery=query;panel.hidden=false;
+    const key=$('youtubeApiKey').value.trim()||readYouTubeApiKey()||window.AudioWaveYouTubeKey||'';
     if(!key){status.textContent='Add a YouTube API key to include videos in search.';setup.hidden=false;return}
     status.textContent='Finding videos…';
     const abort=new AbortController();discoverAbort=abort;
     try{
-      const params=new URLSearchParams({part:'snippet',type:'video',videoEmbeddable:'true',maxResults:'12',q:query,key});
-      const response=await fetch('https://www.googleapis.com/youtube/v3/search?'+params,{signal:abort.signal});
+      const response=await youtubeSearch(query,50,abort.signal);
       if(!response.ok)throw new Error('search failed');
       const data=await response.json();
       if(request!==discoverRequest)return;
-      renderYouTubeResults(data.items||[],results);
-      status.textContent=results.children.length?'Choose a video to play.':'No embeddable videos found.';
+      const items=(data.items||[]).filter(item=>$('includeLive').checked||!(/\b(?:live|concert|performance)\b/i.test(item.snippet?.title||'')));
+      let tracks=[],metadataAvailable=true;
+      try{
+        const params=new URLSearchParams({term:query,entity:'song',limit:'200'});
+        const metadata=await fetch('https://itunes.apple.com/search?'+params,{signal:abort.signal});
+        if(!metadata.ok)throw new Error('Album lookup failed');
+        tracks=(await metadata.json()).results||[];
+      }catch(error){if(error?.name==='AbortError')throw error;metadataAvailable=false}
+      if(request!==discoverRequest)return;
+      window.ArtistWaveLibrary?.setYouTubeTracks?.(window.ArtistWaveYouTubeAlbums.toTracks(items,tracks,query),query);
+      const groups=window.ArtistWaveYouTubeAlbums.group(items,tracks,query);
+      for(const group of groups){
+        const section=document.createElement('details');section.className='youtube-album';section.open=true;
+        const heading=document.createElement('summary');heading.textContent=group.album+' · '+group.items.length+' video'+(group.items.length===1?'':'s');
+        const list=document.createElement('div');list.className='youtube-search-results';renderYouTubeResults(group.items,list);
+        section.append(heading,list);results.append(section);
+      }
+      status.textContent=items.length?(metadataAvailable?'Choose a video to play.':'Album details are unavailable; showing other videos.'):'No embeddable videos found.';
     }catch(error){
       if(request!==discoverRequest||error?.name==='AbortError')return;
       status.textContent='YouTube search is unavailable. Check the API key and try again.';setup.hidden=false;
@@ -214,9 +245,12 @@
   }
   function closeWidget(){stopVideo();$('youtubeWorkspace').hidden=true;document.body.classList.remove('youtube-widget-open')}
   $('youtubeWidgetClose').addEventListener('click',closeWidget);
-  $('youtubeDiscoverSetup').addEventListener('click',()=>{openWidget();$('youtubeApiSetup').open=true;$('youtubeApiKey').focus()});
+  $('youtubeDiscoverSetup').addEventListener('click',showKeySetup);
+  $('youtubeApiSetup').hidden=Boolean(window.AudioWaveYouTubeKey)&&!readYouTubeApiKey();
+  providerYouTube.addEventListener('change',()=>{try{localStorage.setItem('artistwave:provider:youtube',String(providerYouTube.checked))}catch{};if(!providerYouTube.checked)hideYouTubeResults();else if($('artistInput').value.trim()&&$('sourceMode').value!=='local')void searchYouTubeFromEntertainment($('artistInput').value.trim())});
   $('searchForm').addEventListener('submit',()=>{const query=$('artistInput').value.trim();if(query)void searchYouTubeFromEntertainment(query)});
-  $('sourceMode').addEventListener('change',()=>{if($('sourceMode').value==='local'){discoverRequest++;discoverAbort?.abort();discoverAbort=null;$('youtubeDiscover').hidden=true}});
+  $('sourceMode').addEventListener('change',()=>{if($('sourceMode').value==='local')hideYouTubeResults();else if(providerYouTube.checked&&$('artistInput').value.trim())void searchYouTubeFromEntertainment($('artistInput').value.trim())});
+  $('includeLive').addEventListener('change',()=>{if(providerYouTube.checked&&!$('youtubeDiscover').hidden&&lastYouTubeQuery)void searchYouTubeFromEntertainment(lastYouTubeQuery)});
   $('audio').addEventListener('play',()=>{if(frame.getAttribute('src')||window.ArtistWaveMiniHost?.state?.().youtubeUrl)stopVideo()});
   document.addEventListener('visibilitychange',()=>{
     if(document.hidden&&frame.getAttribute('src')){stopVideo();setYouTubeMessage('Video stopped while the player was hidden. Open it again to continue.')}
@@ -249,7 +283,8 @@
     setYouTubeMessage(key?(saved?'YouTube API key saved in this browser. Search for a video.':'Browser storage is unavailable. The key will work for this session only.'):'Saved YouTube API key removed.');
   });
   $('youtubeMiniPlayer').addEventListener('click',()=>window.ArtistWaveMiniHost?.open());
-  window.ArtistWaveNavigation={setMode,parseYouTubeUrl,updateYouTubeAccount,takeVideo,restoreVideo};
+  window.ArtistWaveYouTubeSearch={selectArtist:name=>{if(name&&name.trim().toLowerCase()!==lastYouTubeQuery.trim().toLowerCase())void searchYouTubeFromEntertainment(name)},playTrack:url=>{const embed=parseYouTubeUrl(url);if(!embed)return false;openWidget(false);loadVideo(embed,{autoplay:true});if(window.ArtistWaveMiniHost?.open)window.ArtistWaveMiniHost.open();else $('youtubeWorkspace').scrollIntoView({block:'start'});return true}};
+  window.ArtistWaveNavigation={setMode,parseYouTubeUrl,updateYouTubeAccount,takeVideo,restoreVideo,stopVideo};
   window.ArtistWaveYouTubeWidget={open:openWidget,close:closeWidget};
   document.body.dataset.mode='audio';
   updateYouTubeAccount();

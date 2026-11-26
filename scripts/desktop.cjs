@@ -3,7 +3,8 @@ const { app, BrowserWindow, Menu, ipcMain, screen, shell, net, session, safeStor
 const fs = require('node:fs')
 const { join } = require('node:path')
 const { pathToFileURL } = require('node:url')
-const { signIn } = require('./google-auth.cjs')
+const { signIn, readCredentials } = require('./google-auth.cjs')
+const { createGoogleSession } = require('./google-session.cjs')
 const { createNavidrome } = require('./navidrome.cjs')
 const { createPlex } = require('./plex.cjs')
 const { OUTPUT_PROBE_URL, allowOutputPermission } = require('./output-permissions.cjs')
@@ -37,6 +38,7 @@ let core
 let mainWindow
 let managerWindow
 let authAttempt
+let googleSession
 let navidrome
 let plex
 let outputProbe
@@ -109,6 +111,11 @@ ipcMain.handle('audiowave:ccmixter:search', async (event, artist) => {
   }))
 })
 
+function getGoogleSession() {
+  if (!googleSession) googleSession = createGoogleSession({ file: join(app.getPath('userData'), 'google-session.bin'), secureStorage: safeStorage, credentials: readCredentials() })
+  return googleSession
+}
+
 ipcMain.handle('audiowave:auth:sign-in', async (event) => {
   requireAuthPage(event)
   if (authAttempt) throw new Error('A sign-in is already open in your browser.')
@@ -120,10 +127,21 @@ ipcMain.handle('audiowave:auth:sign-in', async (event) => {
       mainWindow.show()
       mainWindow.focus()
     }
-    return token
+    const remembered = getGoogleSession().remember(token.refresh_token)
+    return { access_token: token.access_token, expires_in: token.expires_in, remembered }
   } finally {
     if (authAttempt === attempt) authAttempt = null
   }
+})
+ipcMain.handle('audiowave:auth:restore', event => {
+  requireAuthPage(event)
+  if (authAttempt) return null
+  return getGoogleSession().restore()
+})
+ipcMain.handle('audiowave:auth:forget', event => {
+  requireAuthPage(event)
+  authAttempt?.abort()
+  getGoogleSession().forget()
 })
 ipcMain.handle('audiowave:auth:cancel', event => {
   requireAuthPage(event)

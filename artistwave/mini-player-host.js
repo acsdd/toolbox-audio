@@ -40,6 +40,7 @@
   }
   function command(action,value){
     const audio=$('audio');
+    if(['playlist','queuePlay','track'].includes(action)&&youtubeUrl)window.ArtistWaveNavigation?.stopVideo?.();
     if(action==='play')$('playButton').click();
     else if(action==='playlist')window.ArtistWavePlaylists?.play?.(value);
     else if(action==='alwaysOnTop'&&document.body.dataset?.miniAlwaysOnTop!==undefined){
@@ -95,6 +96,9 @@
     wrapper.hidden=false;
     document.body.classList.add('mini-player-active');
   }
+  function transferIfOpen(){
+    if((popup&&!popup.closed)||!$('miniPlayerFallback').hidden)youtubeUrl=window.ArtistWaveNavigation?.takeVideo?.()||youtubeUrl;
+  }
   function open(){
     if(document.body.classList.contains('youtube-widget-open'))youtubeUrl=window.ArtistWaveNavigation?.takeVideo?.()||youtubeUrl;
     if(popup&&!popup.closed){popup.focus();return}
@@ -108,7 +112,7 @@
     else showFallback();
   }
   $('openMiniPlayer').addEventListener('click',open);
-  window.ArtistWaveMiniHost={state,command,open,closeFallback,endVideo,returnVideo};
+  window.ArtistWaveMiniHost={state,command,open,closeFallback,endVideo,returnVideo,transferIfOpen,videoEnded:()=>window.ArtistWaveLibrary?.youtubeEnded?.()};
   // Direct bookmark: a fully functioning compact view in this tab/window.
   // The main audio engine runs in this page, so no opener is required.
   if(window.location?.search&&new URLSearchParams(window.location.search).get('mini')==='1'){

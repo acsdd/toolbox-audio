@@ -1,7 +1,7 @@
 {
   "name": "toolbox-audio",
   "productName": "AudioWave",
-  "version": "1.0.1",
+  "version": "1.0.6",
   "description": "AudioWave desktop music player with local, Navidrome and Plex libraries.",
   "author": "Alpha Team",
   "license": "MIT",
@@ -16,6 +16,7 @@
     "start": "npm run build && electron scripts/desktop.cjs",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "npm run build && node --test \"test/**/*.test.ts\"",
+    "check:privacy": "node scripts/check-private-files.cjs",
     "smoke": "npm run build && electron scripts/smoke.cjs",
     "portable": "node scripts/pack-portable.mjs",
     "sync:artistwave": "node scripts/sync-artistwave.mjs"
@@ -37,6 +38,7 @@
     "files": [
       "artistwave/**/*",
       "scripts/google-auth.cjs",
+      "scripts/google-session.cjs",
       "scripts/output-permissions.cjs",
       "scripts/navidrome.cjs",
       "scripts/plex.cjs",
