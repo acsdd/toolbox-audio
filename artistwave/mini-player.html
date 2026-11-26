@@ -18,6 +18,12 @@
       <button id="miniClose" class="mini-close" type="button" aria-label="Close mini player">×</button>
     </header>
     <main class="mini-main">
+      <section id="miniYoutube" class="mini-youtube" hidden aria-label="YouTube video">
+        <iframe id="miniYoutubeFrame" title="Official YouTube video player" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
+        <div class="youtube-controls" aria-label="YouTube playback controls"><button type="button" data-yt="toggle" aria-label="Play YouTube video">▶</button><input type="range" data-yt="seek" min="0" max="1000" value="0" aria-label="Seek YouTube video"><span data-yt="time">0:00 / 0:00</span><label>Volume <input type="range" data-yt="volume" min="0" max="100" value="100" aria-label="YouTube volume"></label></div>
+        <p>Use the YouTube player controls. Press play after switching views.</p>
+        <button id="miniYoutubePin" class="mini-pill" type="button" hidden>On top: on</button>
+      </section>
       <div class="mini-cover" id="miniCover">
         <div class="cover-glow"></div>
         <span id="miniArtPlaceholder" class="cover-symbol">♫</span>
@@ -65,6 +71,7 @@
       <button id="miniOpenMain" type="button">↗ Full player</button>
     </footer>
   </div>
+  <script src="youtube-controls.js" defer></script>
   <script src="mini-player.js" defer></script>
   <script src="theme.js" defer></script>
 </body>

@@ -37,16 +37,16 @@ async function render() {
       actions.className = 'actions'
       if (widget.installed) {
         actions.append(button('Open', async () => {
-          try { await api.open(widget.id); status.textContent = 'Mini Player opened.' }
+          try { await api.open(widget.id); status.textContent = `${widget.name} opened.` }
           catch (error) { status.textContent = error.message }
         }, true))
         actions.append(button('Remove', async () => {
-          try { await api.uninstall(widget.id); status.textContent = 'Mini Player removed.'; await render() }
+          try { await api.uninstall(widget.id); status.textContent = `${widget.name} removed.`; await render() }
           catch (error) { status.textContent = error.message }
         }))
       } else {
         actions.append(button('Install', async () => {
-          try { await api.install(widget.id); status.textContent = 'Mini Player installed.'; await render() }
+          try { await api.install(widget.id); status.textContent = `${widget.name} installed.`; await render() }
           catch (error) { status.textContent = error.message }
         }, true))
       }

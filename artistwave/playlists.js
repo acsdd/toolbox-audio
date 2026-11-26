@@ -232,7 +232,7 @@
     for(const id of ['discoverNav','favoritesNav','recentNav']){
       $(id).addEventListener('click',showAudio);
     }
-    for(const id of ['modeAudio','studioNav','modeYoutube']){
+    for(const id of ['modeAudio','studioNav']){
       $(id).addEventListener('click',showAudio);
     }
     $('myPlaylistsCreate').addEventListener('click',()=>openEditor('create'));

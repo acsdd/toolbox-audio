@@ -5,6 +5,11 @@
   const embedded=new URLSearchParams(location.search).get('embedded')==='1';
   let host=null,lastQueue='',lastCover='',draggingSeek=false,draggingVolume=false,libraryLimit=150,upNextLimit=100;
   const miniView=$('miniViewToggle');
+  const videoFrame=$('miniYoutubeFrame');
+  const videoControls=window.ArtistWaveYouTubeControls.bind(videoFrame,$('miniYoutube'));
+  function stopVideo(){videoControls.reset();videoFrame.removeAttribute('src');$('miniYoutube').hidden=true;document.body.classList.remove('youtube-mini')}
+  function returnVideo(){const position=videoControls.position();stopVideo();try{connect()?.returnVideo?.(position)}catch{}}
+  window.ArtistWaveMiniVideo={stop:stopVideo};
   function setMiniView(view){
     const artwork=view==='artwork';document.body.dataset.miniView=artwork?'artwork':'queue';
     if(miniView){miniView.setAttribute('aria-pressed',String(artwork));miniView.textContent=artwork?'Queue view':'Artwork view'}
@@ -110,6 +115,7 @@
   function refresh(){
     host=connect();
     if(!host){
+      stopVideo();
       document.body.classList.add('disconnected');
       $('miniConnection').textContent='Main player disconnected';
       $('miniPlaybackLabel').textContent='RECONNECT ARTISTWAVE';
@@ -121,6 +127,13 @@
     }
     let state;
     try{state=host.state()}catch{return}
+    const videoUrl=typeof state.youtubeUrl==='string'?state.youtubeUrl:'';
+    if(videoUrl){
+      document.body.classList.add('youtube-mini');$('miniYoutube').hidden=false;
+      if(videoFrame.getAttribute('src')!==videoUrl){videoFrame.src=videoUrl;videoControls.attach()}
+      const pin=$('miniYoutubePin');pin.hidden=typeof state.alwaysOnTop!=='boolean';
+      pin.textContent=state.alwaysOnTop?'On top: on':'On top: off';pin.setAttribute('aria-pressed',String(state.alwaysOnTop===true));
+    }else if(!document.getElementById('miniYoutube').hidden)stopVideo();
     document.body.classList.remove('disconnected');
     $('miniConnection').textContent='Connected to ArtistWave';
     $('miniPlaybackLabel').textContent=state.playing?'NOW PLAYING':'PAUSED / READY';
@@ -186,6 +199,7 @@
   bind('miniShuffle','shuffle');bind('miniRepeat','repeat');
   bind('miniFavorite','favorite');bind('miniSave','save');
   $('miniAlwaysOnTop').addEventListener('click',()=>send('alwaysOnTop'));
+  $('miniYoutubePin').addEventListener('click',()=>send('alwaysOnTop'));
   $('miniPlaylists').addEventListener('change',event=>{
     const selection=event.target;
     if(selection.value)send('playlist',selection.value);
@@ -196,15 +210,21 @@
   $('miniVolume').addEventListener('input',event=>{draggingVolume=true;send('volume',event.target.value)});
   $('miniVolume').addEventListener('change',()=>{draggingVolume=false;refresh()});
   $('miniClose').addEventListener('click',()=>{
+    returnVideo();
     if(embedded)try{window.parent.ArtistWaveMiniHost?.closeFallback()}catch{}
     else window.close();
   });
   $('miniOpenMain').addEventListener('click',()=>{
+    returnVideo();
     try{
       const main=embedded?window.parent:window.opener;
       if(main&&!main.closed){main.focus();if(embedded)main.ArtistWaveMiniHost?.closeFallback();return}
     }catch{}
     if(!embedded)window.open('./','_blank');
+  });
+  window.addEventListener('pagehide',returnVideo);
+  document.addEventListener('visibilitychange',()=>{
+    if(document.hidden&&videoFrame.getAttribute('src')){stopVideo();try{connect()?.endVideo?.()}catch{}}
   });
   refresh();
   setInterval(refresh,500);

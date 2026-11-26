@@ -3,13 +3,23 @@
  * The pop-out never creates another audio stream. */
 (function(){
   const $=id=>document.getElementById(id);
-  let popup=null;
+  let popup=null,youtubeUrl='';
+  function endVideo(){
+    youtubeUrl='';
+    try{$('miniPlayerFallbackFrame').contentWindow?.ArtistWaveMiniVideo?.stop?.()}catch{}
+    try{if(popup&&!popup.closed)popup.ArtistWaveMiniVideo?.stop?.()}catch{}
+  }
+  function returnVideo(position=0){
+    let url=youtubeUrl;youtubeUrl='';
+    if(url&&Number.isFinite(position)&&position>0){const resume=new URL(url);resume.searchParams.set('start',String(Math.floor(position)));url=resume.href}
+    if(url)window.ArtistWaveNavigation?.restoreVideo?.(url);
+  }
   function state(){
     const audio=$('audio'),track=window.ArtistWaveLibrary?.getCurrent?.()||null;
     const duration=Number.isFinite(audio.duration)?audio.duration:0;
     const pin=document.body.dataset?.miniAlwaysOnTop;
     return {
-      alwaysOnTop:pin===undefined?undefined:pin==='true',
+      alwaysOnTop:pin===undefined?undefined:pin==='true',youtubeUrl,
       playlists:window.ArtistWavePlaylists?.list?.()||[],
       ready:true,title:track?.title||'Nothing playing yet',
       artist:track?.artist||'Find a song in ArtistWave',
@@ -65,10 +75,12 @@
     }
     return state();
   }
-  function closeFallback(){
+  function closeFallback(restore=true){
     const wrapper=$('miniPlayerFallback'),frame=$('miniPlayerFallbackFrame');
+    try{frame.contentWindow?.ArtistWaveMiniVideo?.stop?.()}catch{}
     wrapper.hidden=true;
     frame.removeAttribute('src');
+    if(restore)returnVideo();
     document.body.classList.remove('mini-player-active');
     if(window.location?.search&&new URLSearchParams(window.location.search).get('mini')==='1'){
       const url=new URL(window.location.href);
@@ -84,6 +96,7 @@
     document.body.classList.add('mini-player-active');
   }
   function open(){
+    if(document.body.classList.contains('youtube-widget-open'))youtubeUrl=window.ArtistWaveNavigation?.takeVideo?.()||youtubeUrl;
     if(popup&&!popup.closed){popup.focus();return}
     // Browsers control actual window sizing; 430px is a request, not a guarantee.
     const height=Math.max(540,Math.round(window.screen?.availHeight||window.innerHeight||780));
@@ -91,11 +104,11 @@
     const left=Math.max(0,Math.round((window.screen?.availWidth||1000)-width-26));
     popup=window.open('mini-player.html','artistwave-mini-player',
       'popup=yes,width='+width+',height='+height+',left='+left+',top=0,resizable=yes,scrollbars=yes');
-    if(popup){closeFallback();popup.focus()}
+    if(popup){closeFallback(false);popup.focus()}
     else showFallback();
   }
   $('openMiniPlayer').addEventListener('click',open);
-  window.ArtistWaveMiniHost={state,command,open,closeFallback};
+  window.ArtistWaveMiniHost={state,command,open,closeFallback,endVideo,returnVideo};
   // Direct bookmark: a fully functioning compact view in this tab/window.
   // The main audio engine runs in this page, so no opener is required.
   if(window.location?.search&&new URLSearchParams(window.location.search).get('mini')==='1'){

@@ -10,11 +10,20 @@ const { OUTPUT_PROBE_URL, allowOutputPermission } = require('./output-permission
 
 const APP_NAME = 'AudioWave'
 const MINI_PLAYER_ID = 'mini-player'
+const YOUTUBE_WIDGET_ID = 'youtube-player'
 const WIDGET_CATALOG = [
   {
     id: MINI_PLAYER_ID,
     name: 'Mini Player',
     description: 'A compact, always-on-top player connected to the main ArtistWave session.',
+    publisher: 'AudioWave',
+    version: '1.0.0',
+    firstParty: true
+  },
+  {
+    id: YOUTUBE_WIDGET_ID,
+    name: 'YouTube Player',
+    description: 'Watch YouTube videos inside the Entertainment workspace with the official player.',
     publisher: 'AudioWave',
     version: '1.0.0',
     firstParty: true
@@ -170,6 +179,18 @@ function openMiniPlayerWidget() {
   return true
 }
 
+function openYouTubeWidget() {
+  if (!installedWidgets.has(YOUTUBE_WIDGET_ID) || !mainWindow || mainWindow.isDestroyed()) return false
+  if (mainWindow.webContents.isLoading()) {
+    mainWindow.webContents.once('did-finish-load', openYouTubeWidget)
+    return true
+  }
+  mainWindow.show()
+  mainWindow.focus()
+  void mainWindow.webContents.executeJavaScript('window.ArtistWaveYouTubeWidget?.open()').catch(() => {})
+  return true
+}
+
 function openWidgetManager() {
   if (managerWindow && !managerWindow.isDestroyed()) {
     managerWindow.show()
@@ -228,7 +249,10 @@ function rebuildApplicationMenu() {
           label: 'Open Mini Player',
           enabled: miniInstalled,
           click: openMiniPlayerWidget
-        }
+        },
+        { type: 'separator' },
+        { label: `YouTube Player — ${installedWidgets.has(YOUTUBE_WIDGET_ID) ? 'Installed' : 'Not installed'}`, enabled: false },
+        { label: 'Open YouTube Player', enabled: installedWidgets.has(YOUTUBE_WIDGET_ID), click: openYouTubeWidget }
       ]
     }
   ]))
@@ -265,6 +289,9 @@ ipcMain.handle('audiowave:widgets:uninstall', (event, id) => {
   if (id === MINI_PLAYER_ID && mainWindow && !mainWindow.isDestroyed()) {
     void mainWindow.webContents.executeJavaScript('window.ArtistWaveMiniHost?.closeFallback()').catch(() => {})
   }
+  if (id === YOUTUBE_WIDGET_ID && mainWindow && !mainWindow.isDestroyed()) {
+    void mainWindow.webContents.executeJavaScript('window.ArtistWaveYouTubeWidget?.close()').catch(() => {})
+  }
   saveInstalledWidgets()
   rebuildApplicationMenu()
   return widgetList()
@@ -272,10 +299,10 @@ ipcMain.handle('audiowave:widgets:uninstall', (event, id) => {
 
 ipcMain.handle('audiowave:widgets:open', (event, id) => {
   requireWidgetManager(event)
-  if (id !== MINI_PLAYER_ID || !installedWidgets.has(id)) {
-    throw new Error('Install the Mini Player before opening it.')
-  }
-  return openMiniPlayerWidget()
+  if (!installedWidgets.has(id)) throw new Error('Install this widget before opening it.')
+  if (id === MINI_PLAYER_ID) return openMiniPlayerWidget()
+  if (id === YOUTUBE_WIDGET_ID) return openYouTubeWidget()
+  throw new Error('This widget is not available.')
 })
 
 if (!app.requestSingleInstanceLock()) {
@@ -325,6 +352,13 @@ if (!app.requestSingleInstanceLock()) {
         const file = join(assets, filename)
         if (!fs.existsSync(file)) return new Response('Not found', { status: 404 })
         return net.fetch(pathToFileURL(file).href)
+      }
+      if (url.origin === 'https://www.youtube.com' && url.pathname.startsWith('/embed/')) {
+        // Electron's protocol proxy may omit the embedding site's Referer.
+        // Identify this app to YouTube without changing other requests.
+        const headers = new Headers(request.headers)
+        if (!headers.has('referer')) headers.set('Referer', 'https://acsdd.github.io/')
+        return net.fetch(request, { headers, bypassCustomProtocolHandlers: true })
       }
       return net.fetch(request, { bypassCustomProtocolHandlers: true })
     })

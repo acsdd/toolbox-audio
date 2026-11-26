@@ -32,7 +32,6 @@
         <nav class="mode-tabs" aria-label="Switch ArtistWave workspace">
           <button type="button" id="modeAudio" class="mode-tab active" aria-current="page"><svg class="mode-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 13v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="12" width="4" height="7" rx="2"/><rect x="17" y="12" width="4" height="7" rx="2"/></svg><span>Entertainment</span></button>
           <button type="button" id="studioNav" class="mode-tab studio-nav"><svg class="mode-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="4" r="2"/><path d="m7 10 5-3 5 3m-5-3v6m0 0-5 7m5-7 5 7"/></svg><span>Showdance</span></button>
-          <button type="button" id="modeYoutube" class="mode-tab"><svg class="mode-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="4"/><path d="m10 9 5 3-5 3z" fill="currentColor" stroke="none"/></svg><span>YouTube</span></button>
         </nav>
         <div class="top-right"><button id="installAppButton" class="install-app-button" type="button" aria-label="Install ArtistWave as an app" title="Install ArtistWave" hidden>⬇ Install</button><label class="theme-select-label"><span>Select theme</span><select id="themeSelect" aria-label="Color theme"><option value="night">Night</option><option value="day">Day</option><option value="bright-night">Bright Night</option><option value="ocean">Ocean</option><option value="plum">Plum</option><optgroup label="Looney Tunes"><option value="bugs">Bugs Bunny</option><option value="daffy">Daffy Duck</option><option value="tweety">Tweety</option><option value="sylvester">Sylvester</option><option value="taz">Tasmanian Devil</option><option value="roadrunner">Road Runner</option></optgroup></select></label><details class="appearance-menu" id="appearanceMenu"><summary>Appearance</summary><div class="appearance-panel"><strong>Preview themes</strong><div id="themePreviews" class="theme-previews" aria-label="Theme previews"></div><label for="displayDensity">Track spacing</label><select id="displayDensity"><option value="comfortable">Comfortable</option><option value="compact">Compact</option></select><label for="glassIntensity">Glass effect</label><select id="glassIntensity"><option value="soft">Subtle</option><option value="medium">Medium</option><option value="strong">Strong</option></select><label for="audioOutputSelect">Audio output</label><div class="audio-output-controls"><select id="audioOutputSelect" aria-describedby="audioOutputStatus"><option value="">System default</option></select><button type="button" id="audioOutputRefresh" title="Refresh audio output devices" aria-label="Refresh audio output devices">↻</button></div><span id="audioOutputStatus" class="audio-output-status" role="status" aria-live="polite"></span></div></details><span class="version">V 3.4</span>
           <span id="installAppStatus" class="install-app-status" role="status" aria-live="polite" hidden></span>
@@ -119,14 +118,14 @@
         </div>
       </section>
       <section class="youtube-workspace" id="youtubeWorkspace" hidden aria-labelledby="youtubeHeading">
-        <div class="youtube-head"><div class="overline">WATCH MUSIC / VIDEO</div><h2 id="youtubeHeading">▶ YouTube</h2>
-          <p>Watch music videos using YouTube’s official, visible player. The entertainment audio library remains separate.</p></div>
+        <div class="youtube-head"><button type="button" id="youtubeWidgetClose" aria-label="Close YouTube widget">×</button><div class="overline">WATCH MUSIC / VIDEO</div><h2 id="youtubeHeading">▶ YouTube</h2>
+          <p>Watch music videos using YouTube’s official, visible player. The entertainment audio library remains separate.</p><button type="button" id="youtubeMiniPlayer" disabled>▣ Mini player</button></div>
         <div class="youtube-account">
           <div class="youtube-account-copy"><strong id="youtubeAccountHeading">YouTube account</strong>
             <p id="youtubeAccountStatus" role="status" aria-live="polite">YouTube uses its own browser sign-in session.</p></div>
           <a id="youtubeSignInLink" href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer">Open YouTube / Sign in ↗</a>
         </div>
-        <div class="youtube-panel">
+        <div class="youtube-panel"><div class="youtube-browse">
           <form id="youtubeLinkForm" class="youtube-link-form">
             <label for="youtubeUrl">Paste a YouTube video or playlist link</label>
             <div class="youtube-link-row"><input id="youtubeUrl" type="url" inputmode="url" placeholder="https://www.youtube.com/watch?v=…" autocomplete="off" spellcheck="false" />
@@ -144,11 +143,12 @@
             <small>Create a key in <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer">Google Cloud Credentials</a>, enable YouTube Data API v3, and restrict the key to your site. The key is stored only in this browser.</small>
           </details>
           <div id="youtubeMessage" class="youtube-message" role="status" aria-live="polite">Search here to browse YouTube videos, then play a selection in the official player.</div>
-          <div id="youtubePlayerRegion" class="youtube-player-region" hidden>
-            <iframe id="youtubeFrame" title="Official YouTube video player" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>
-          </div>
           <div id="youtubeSearchResults" class="youtube-search-results" aria-label="YouTube search results" aria-live="polite"></div>
           <p class="youtube-disclaimer">Videos must permit embedding. Playback uses YouTube’s official player, not extracted audio; YouTube Premium does not unlock a separate audio-only stream here.</p>
+          </div><div id="youtubePlayerRegion" class="youtube-player-region" hidden>
+            <iframe id="youtubeFrame" title="Official YouTube video player" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+            <div class="youtube-controls" aria-label="YouTube playback controls"><button type="button" data-yt="toggle" aria-label="Play YouTube video">▶</button><input type="range" data-yt="seek" min="0" max="1000" value="0" aria-label="Seek YouTube video"><span data-yt="time">0:00 / 0:00</span><label>Volume <input type="range" data-yt="volume" min="0" max="100" value="100" aria-label="YouTube volume"></label></div>
+          </div>
         </div>
       </section>
       <section class="studio-workspace" id="studioWorkspace" hidden aria-labelledby="studioHeading">
@@ -211,7 +211,7 @@
   <button class="provider-save" id="saveJamendoId" type="button">Save ID</button>
   <small id="jamendoHelp">Optional: <a href="https://devportal.jamendo.com/" target="_blank" rel="noopener noreferrer">request your Jamendo client ID</a>. No password or API secret needed.</small>
 </fieldset>
-<div id="matchPanel" class="match-panel" hidden><div class="match-top"><div><div class="overline">CHOOSE THE RIGHT MATCH</div><h3 id="matchHeading">Search matches</h3></div><span id="matchSummary"></span></div><div id="matchList" class="match-list"></div></div></section>
+<div id="matchPanel" class="match-panel" hidden><div class="match-top"><div><div class="overline">CHOOSE THE RIGHT MATCH</div><h3 id="matchHeading">Search matches</h3></div><span id="matchSummary"></span></div><div id="matchList" class="match-list"></div></div><section id="youtubeDiscover" class="youtube-discover" hidden aria-labelledby="youtubeDiscoverHeading"><div class="match-top"><div><div class="overline">VIDEOS</div><h3 id="youtubeDiscoverHeading">YouTube results</h3></div><span id="youtubeDiscoverStatus" role="status" aria-live="polite"></span></div><button type="button" id="youtubeDiscoverSetup" class="youtube-discover-setup" hidden>Set up YouTube search</button><div id="youtubeDiscoverResults" class="youtube-search-results"></div></section></section>
 
       <section class="genre-results" id="genreResults" hidden>
         <div class="section-heading"><div><div class="overline">BROWSE THE MUSIC</div><h2 id="genreResultsHeading">Explore music styles</h2></div><span id="genreResultsCount" class="section-aside"></span></div>
@@ -272,6 +272,7 @@
   <script src="cloud-sync.js" defer></script>
   <script src="app.js" defer></script>
   <script src="studio.js" defer></script>
+  <script src="youtube-controls.js" defer></script>
   <script src="navigation.js" defer></script>
   <script src="playlists.js" defer></script>
   <script src="mini-player-host.js" defer></script>
