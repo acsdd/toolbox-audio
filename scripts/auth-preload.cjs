@@ -3,6 +3,7 @@ const { contextBridge, ipcRenderer } = require('electron')
 if (process.isMainFrame && location.origin === 'https://acsdd.github.io' &&
     location.pathname.startsWith('/ArtistWave/')) {
   contextBridge.exposeInMainWorld('AudioWaveDesktop', { folderPicker: 'file-input' })
+  contextBridge.exposeInMainWorld('AudioWaveOutputs', { list: () => ipcRenderer.invoke('audiowave:outputs:list') })
   contextBridge.exposeInMainWorld('AudioWaveAuth', {
     signIn: () => ipcRenderer.invoke('audiowave:auth:sign-in'),
     cancel: () => ipcRenderer.invoke('audiowave:auth:cancel')

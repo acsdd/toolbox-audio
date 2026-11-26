@@ -37,6 +37,7 @@
     "files": [
       "artistwave/**/*",
       "scripts/google-auth.cjs",
+      "scripts/output-permissions.cjs",
       "scripts/navidrome.cjs",
       "scripts/plex.cjs",
       "scripts/auth-preload.cjs",

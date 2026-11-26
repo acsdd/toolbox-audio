@@ -31,7 +31,7 @@ await copyFile(join(root, 'dist/core.js'), join(appDir, 'dist/core.js'))
 await mkdir(join(appDir, 'config'), { recursive: true })
 await copyFile(join(root, 'config/google-oauth.json'), join(appDir, 'config/google-oauth.json'))
 await copyFile(join(root, 'scripts/desktop.cjs'), join(appDir, 'scripts/desktop.cjs'))
-for (const file of ['plex.cjs', 'navidrome.cjs', 'google-auth.cjs', 'auth-preload.cjs', 'widget-manager-preload.cjs', 'widgets.html', 'widget-manager-ui.js', 'widgets.css']) {
+for (const file of ['plex.cjs', 'navidrome.cjs', 'google-auth.cjs', 'output-permissions.cjs', 'auth-preload.cjs', 'widget-manager-preload.cjs', 'widgets.html', 'widget-manager-ui.js', 'widgets.css']) {
   await copyFile(join(root, 'scripts', file), join(appDir, 'scripts', file))
 }
 await mkdir(join(appDir, 'build'), { recursive: true })
@@ -57,7 +57,7 @@ await writeFile(join(appDir, 'package.json'), JSON.stringify({
     asar: true,
     compression: 'maximum',
     directories: { output: buildDir },
-    files: ['dist/core.js', 'config/google-oauth.json', 'artistwave/**/*', 'scripts/desktop.cjs', 'scripts/plex.cjs', 'scripts/navidrome.cjs', 'scripts/google-auth.cjs', 'scripts/auth-preload.cjs', 'scripts/widget-manager-preload.cjs', 'scripts/widgets.html', 'scripts/widget-manager-ui.js', 'scripts/widgets.css', 'package.json'],
+    files: ['dist/core.js', 'config/google-oauth.json', 'artistwave/**/*', 'scripts/desktop.cjs', 'scripts/plex.cjs', 'scripts/navidrome.cjs', 'scripts/google-auth.cjs', 'scripts/output-permissions.cjs', 'scripts/auth-preload.cjs', 'scripts/widget-manager-preload.cjs', 'scripts/widgets.html', 'scripts/widget-manager-ui.js', 'scripts/widgets.css', 'package.json'],
     win: { icon: join(appDir, 'build/icon.png'), target: [{ target: 'portable', arch: ['x64'] }] },
     portable: { artifactName: 'AudioWave-Portable-${version}.${ext}' }
   }

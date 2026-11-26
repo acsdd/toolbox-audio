@@ -6,6 +6,7 @@ const { pathToFileURL } = require('node:url')
 const { signIn } = require('./google-auth.cjs')
 const { createNavidrome } = require('./navidrome.cjs')
 const { createPlex } = require('./plex.cjs')
+const { OUTPUT_PROBE_URL, allowOutputPermission } = require('./output-permissions.cjs')
 
 const APP_NAME = 'AudioWave'
 const MINI_PLAYER_ID = 'mini-player'
@@ -29,6 +30,8 @@ let managerWindow
 let authAttempt
 let navidrome
 let plex
+let outputProbe
+let outputProbePromise
 
 for (const operation of ['status', 'connect', 'disconnect', 'albums', 'tracks']) {
   ipcMain.handle('audiowave:navidrome:' + operation, (event, input) => {
@@ -54,6 +57,27 @@ function requireAuthPage(event) {
     throw new Error('Sign-in is only available from the AudioWave player.')
   }
 }
+
+// Device names are read in a scriptless, isolated same-origin window. Its
+// only executed code returns audio outputs; no audio stream is opened.
+ipcMain.handle('audiowave:outputs:list', async event => {
+  requireAuthPage(event)
+  if (outputProbePromise) return outputProbePromise
+  outputProbePromise = (async () => {
+    outputProbe = new BrowserWindow({show:false,webPreferences:{sandbox:true,contextIsolation:true,nodeIntegration:false}})
+    const probe = outputProbe
+    probe.webContents.setWindowOpenHandler(() => ({action:'deny'}))
+    probe.webContents.on('will-navigate', event => event.preventDefault())
+    try {
+      await probe.loadURL(OUTPUT_PROBE_URL)
+      return await probe.webContents.executeJavaScript(`navigator.mediaDevices.enumerateDevices().then(devices => devices.filter(device => device.kind === 'audiooutput' && device.deviceId).map(device => ({deviceId:device.deviceId,label:device.label})))`)
+    } finally {
+      if (!probe.isDestroyed()) probe.destroy()
+      if (outputProbe === probe) outputProbe = null
+    }
+  })()
+  try { return await outputProbePromise } finally { outputProbePromise = null }
+})
 
 ipcMain.handle('audiowave:ccmixter:search', async (event, artist) => {
   requireAuthPage(event)
@@ -282,6 +306,11 @@ if (!app.requestSingleInstanceLock()) {
     await session.defaultSession.clearStorageData({ storages: ['serviceworkers', 'cachestorage'] })
     session.defaultSession.protocol.handle('https', request => {
       const url = new URL(request.url)
+      if (url.href === OUTPUT_PROBE_URL) {
+        return new Response('<!doctype html><title>Audio output devices</title>', {
+          headers: {'Content-Type':'text/html; charset=utf-8','Content-Security-Policy':"default-src 'none'; base-uri 'none'; form-action 'none'"}
+        })
+      }
       if (url.origin === 'https://acsdd.github.io' && url.pathname.startsWith('/ArtistWave/__plex/')) {
         return plex.media(request)
       }
@@ -322,7 +351,8 @@ if (!app.requestSingleInstanceLock()) {
     })
 
     mainWindow.webContents.session.setPermissionRequestHandler((_contents, _permission, callback) => callback(false))
-    mainWindow.webContents.session.setPermissionCheckHandler(() => false)
+    mainWindow.webContents.session.setPermissionCheckHandler((contents, permission, origin, details) =>
+      allowOutputPermission(contents, permission, origin, details, mainWindow, outputProbe))
     mainWindow.webContents.on('did-start-navigation', (_event, _url, inPlace, isMainFrame) => {
       if (isMainFrame && !inPlace) { authAttempt?.abort(); plex?.cancel() }
     })

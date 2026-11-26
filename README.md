@@ -14,6 +14,8 @@ Run the portable EXE or install the Windows x64 setup package. End users do not 
 
 Under **Local music**, choose Navidrome or Plex. Navidrome accepts your server URL and account credentials. Plex opens your browser for account authorization and then offers the server's music libraries. Browse albums, search, play tracks and save them to playlists.
 
+Choose **Appearance → Audio output** to select speakers or headphones for the main player, Mini player, and Showdance. The choice is saved on this device; if it is disconnected, the player falls back to the system default and restores it when available. YouTube's embedded player uses its own output settings.
+
 The player's Mini button switches the same playback session into a full-height, 380px window at the right screen edge. The visible pin button toggles always-on-top. Select saved playlists directly in Mini; Full restores the previous window. The optional first-party widget manager controls the menu shortcut. No third-party plugins are supported.
 
 ## Development

@@ -1479,3 +1479,5 @@ body{background-image:radial-gradient(ellipse at 75% 0%,color-mix(in srgb,var(--
 :root[data-theme="bugs"] .track-row.active :is(.track-info small,.recording-name,.track-source,.lyrics-credit,.heart-button),
 :root[data-theme="bugs"] :is(#favoriteCurrent,#playingSource){color:var(--text)}
 :root[data-theme="bugs"] .playback-status{color:var(--text)!important}
+
+.audio-output-controls{display:flex;align-items:stretch;gap:6px;min-width:0}.appearance-panel .audio-output-controls select{flex:1;min-width:0}.audio-output-controls button{flex:none;min-width:38px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--text);font:inherit;font-size:17px;cursor:pointer}.audio-output-controls button:hover{border-color:var(--accent)}.audio-output-controls button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}.audio-output-status{color:var(--muted);font-size:11px;line-height:1.4;overflow-wrap:anywhere}
