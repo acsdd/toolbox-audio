@@ -15,6 +15,7 @@ if (process.isMainFrame && location.origin === 'https://acsdd.github.io' &&
   })
   contextBridge.exposeInMainWorld('AudioWaveNavidrome', {
     status: () => ipcRenderer.invoke('audiowave:navidrome:status'),
+    cancel: () => ipcRenderer.invoke('audiowave:navidrome:cancel'),
     connect: input => ipcRenderer.invoke('audiowave:navidrome:connect', input),
     disconnect: () => ipcRenderer.invoke('audiowave:navidrome:disconnect'),
     albums: input => ipcRenderer.invoke('audiowave:navidrome:albums', input),

@@ -1,5 +1,7 @@
 'use strict';
 const $=id=>document.getElementById(id),audio=$('audio');
+const playbackLifecycle=window.ArtistWavePlaybackState.create();
+window.ArtistWavePlayback=playbackLifecycle;
 const scrollMotion=()=>window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches?'auto':'smooth';
 const S={artist:'',tracks:[],local:[],favorites:[],selected:-1,matches:[],view:'discover',shuffle:false,repeat:0,page:0,loading:false,artistMbid:null,unavailable:[],catalogLoading:false,catalogResolved:false,catalogRequest:0,requestId:0,matchRequest:0,onlineTracks:[],youtubeTracks:[],localFiles:new Set(),importingFolder:false,providerChecked:{},providerBusy:{},providerErrors:{},archiveItemView:false,albumQueue:[],smartQueue:[],smartOrigin:null,smartOnDeck:false,activeSource:null,playbackToken:0,playCandidates:[],playCandidateIndex:0,bufferTimer:null,recent:[],folderHandleAvailable:false};
 try{S.favorites=JSON.parse(localStorage.getItem('artistwave:favorites')||'[]')}catch{}if(!Array.isArray(S.favorites))S.favorites=[];
@@ -908,6 +910,7 @@ function playAt(i,{keepAlbum=false,queued=false}={}){
   if(!queued){S.smartOnDeck=false;S.smartOrigin=null}
   clearPlaybackRecovery();
   S.selected=i;
+  playbackLifecycle.select({source:String(current().source).toLowerCase(),trackId:window.ArtistWaveResumeState.identifier(current())||String(current().id||i),queueIndex:i,playing:true});
   S.playCandidates=permittedTrackSources(current());
   S.playCandidateIndex=0;
   if(!S.playCandidates.length){
@@ -1809,6 +1812,7 @@ window.ArtistWaveLibrary={
   },
   getSongs:()=>S.view==='favorites'?dedupeTracks(S.favorites):S.view==='recent'?dedupeTracks(S.recent):S.tracks,
   getCurrent:()=>current(),
+  getPlaybackToken:()=>S.playbackToken,
   getLocal:()=>S.local.slice(),
   sessionSnapshot:()=>({tracks:S.tracks,selected:S.selected,time:audio.currentTime,smartQueue:S.smartQueue,smartOnDeck:S.smartOnDeck,smartOrigin:S.smartOrigin,albumQueue:S.albumQueue,shuffle:S.shuffle,repeat:S.repeat,volume:audio.volume}),
   restoreSession:session=>{

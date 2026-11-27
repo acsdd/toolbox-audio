@@ -44,9 +44,10 @@
   }
   async function run(action){
     if(busy)return;
+    const request=generation;
     setBusy(true);
-    try{await action()}catch(error){report(error.message,true)}
-    finally{setBusy(false)}
+    try{await action()}catch(error){if(request===generation||dialog.open)report(error.message,true)}
+    finally{if(dialog.open)setBusy(false)}
   }
   function showConnection(state){
     connection=state;
@@ -132,8 +133,10 @@
   });
   $('navidromeClose').onclick=()=>dialog.close();
   dialog.addEventListener('close',()=>{
+    generation++;
     $('navidromePassword').value='';
-    if(busy&&provider==='Plex')void api.cancel().catch(()=>{});
+    if(busy)void api.cancel().catch(()=>{});
+    setBusy(false);
   });
   $('navidromeConnect').onsubmit=event=>{
     event.preventDefault();

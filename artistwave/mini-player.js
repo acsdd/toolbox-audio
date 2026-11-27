@@ -6,9 +6,10 @@
   let host=null,lastQueue='',lastCover='',draggingSeek=false,draggingVolume=false,libraryLimit=150,upNextLimit=100;
   const miniView=$('miniViewToggle');
   const videoFrame=$('miniYoutubeFrame');
-  const videoControls=window.ArtistWaveYouTubeControls.bind(videoFrame,$('miniYoutube'),undefined,()=>connect()?.videoEnded?.());
+  let videoTransitionId;
+  const videoControls=window.ArtistWaveYouTubeControls.bind(videoFrame,$('miniYoutube'),undefined,()=>connect()?.videoEnded?.(videoTransitionId));
   function stopVideo(){videoControls.reset();videoFrame.removeAttribute('src');$('miniYoutube').hidden=true;document.body.classList.remove('youtube-mini')}
-  function returnVideo(){const position=videoControls.position();stopVideo();try{connect()?.returnVideo?.(position)}catch{}}
+  function returnVideo(){const position=videoControls.position();stopVideo();try{connect()?.returnVideo?.(position,videoTransitionId)}catch{}}
   window.ArtistWaveMiniVideo={stop:stopVideo};
   function setMiniView(view){
     const artwork=view==='artwork';document.body.dataset.miniView=artwork?'artwork':'queue';
@@ -130,7 +131,7 @@
     const videoUrl=typeof state.youtubeUrl==='string'?state.youtubeUrl:'';
     if(videoUrl){
       document.body.classList.add('youtube-mini');$('miniYoutube').hidden=false;
-      if(videoFrame.getAttribute('src')!==videoUrl){videoFrame.src=videoUrl;videoControls.attach()}
+        if(videoFrame.getAttribute('src')!==videoUrl){videoTransitionId=state.transitionId;videoFrame.src=videoUrl;videoControls.attach()}
       const pin=$('miniYoutubePin');pin.hidden=typeof state.alwaysOnTop!=='boolean';
       pin.textContent=state.alwaysOnTop?'On top: on':'On top: off';pin.setAttribute('aria-pressed',String(state.alwaysOnTop===true));
     }else if(!document.getElementById('miniYoutube').hidden)stopVideo();

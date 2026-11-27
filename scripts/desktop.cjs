@@ -44,7 +44,7 @@ let plex
 let outputProbe
 let outputProbePromise
 
-for (const operation of ['status', 'connect', 'disconnect', 'albums', 'tracks']) {
+for (const operation of ['status', 'connect', 'cancel', 'disconnect', 'albums', 'tracks']) {
   ipcMain.handle('audiowave:navidrome:' + operation, (event, input) => {
     requireAuthPage(event)
     if (!navidrome) throw new Error('Music server connection is not ready.')

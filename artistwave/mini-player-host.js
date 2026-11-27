@@ -9,7 +9,8 @@
     try{$('miniPlayerFallbackFrame').contentWindow?.ArtistWaveMiniVideo?.stop?.()}catch{}
     try{if(popup&&!popup.closed)popup.ArtistWaveMiniVideo?.stop?.()}catch{}
   }
-  function returnVideo(position=0){
+  function returnVideo(position=0,transitionId){
+    if(transitionId!==undefined&&!window.ArtistWavePlayback.complete(transitionId))return false;
     let url=youtubeUrl;youtubeUrl='';
     if(url&&Number.isFinite(position)&&position>0){const resume=new URL(url);resume.searchParams.set('start',String(Math.floor(position)));url=resume.href}
     if(url)window.ArtistWaveNavigation?.restoreVideo?.(url);
@@ -19,6 +20,7 @@
     const duration=Number.isFinite(audio.duration)?audio.duration:0;
     const pin=document.body.dataset?.miniAlwaysOnTop;
     return {
+      ...window.ArtistWavePlayback.snapshot(),
       alwaysOnTop:pin===undefined?undefined:pin==='true',youtubeUrl,
       playlists:window.ArtistWavePlaylists?.list?.()||[],
       ready:true,title:track?.title||'Nothing playing yet',
@@ -77,6 +79,7 @@
     return state();
   }
   function closeFallback(restore=true){
+    window.ArtistWavePlayback.transition('full');
     const wrapper=$('miniPlayerFallback'),frame=$('miniPlayerFallbackFrame');
     try{frame.contentWindow?.ArtistWaveMiniVideo?.stop?.()}catch{}
     wrapper.hidden=true;
@@ -91,6 +94,7 @@
     }
   }
   function showFallback(){
+    window.ArtistWavePlayback.transition('mini');
     const wrapper=$('miniPlayerFallback');
     $('miniPlayerFallbackFrame').src='mini-player.html?embedded=1';
     wrapper.hidden=false;
@@ -112,7 +116,7 @@
     else showFallback();
   }
   $('openMiniPlayer').addEventListener('click',open);
-  window.ArtistWaveMiniHost={state,command,open,closeFallback,endVideo,returnVideo,transferIfOpen,videoEnded:()=>window.ArtistWaveLibrary?.youtubeEnded?.()};
+  window.ArtistWaveMiniHost={state,command,open,closeFallback,endVideo,returnVideo,transferIfOpen,videoEnded:id=>{if(window.ArtistWavePlayback.complete(id))return window.ArtistWaveLibrary?.youtubeEnded?.()}};
   // Direct bookmark: a fully functioning compact view in this tab/window.
   // The main audio engine runs in this page, so no opener is required.
   if(window.location?.search&&new URLSearchParams(window.location.search).get('mini')==='1'){

@@ -27,6 +27,8 @@ function createNavidrome({ file, secureStorage, fetchImpl = fetch }) {
   let revision = 0
   let connecting = false
   let storageError = ''
+  const requests = new Set()
+  const cancel = () => { revision++; for (const controller of requests) controller.abort() }
   if (fs.existsSync(file)) {
     try {
       connection = JSON.parse(secureStorage.decryptString(fs.readFileSync(file)))
@@ -48,13 +50,17 @@ function createNavidrome({ file, secureStorage, fetchImpl = fetch }) {
   }
   async function api(config, name, params = {}) {
     let response
+    const controller = new AbortController()
+    requests.add(controller)
     try {
       response = await fetchImpl(endpoint(config, name, params), {
-        signal: AbortSignal.timeout(15000), redirect: 'error'
+        signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]), redirect: 'error'
       })
     } catch {
+      if (controller.signal.aborted) throw new Error('Navidrome request cancelled.')
       throw new Error('Cannot reach Navidrome. Check the server address and network connection.')
-    }
+    } finally { requests.delete(controller) }
+    if ([401, 403].includes(response.status)) throw new Error('Navidrome access was denied. Reconnect in My Music.')
     if (!response.ok) throw new Error('Navidrome returned HTTP ' + response.status + '.')
     let data
     try { data = (await response.json())['subsonic-response'] }
@@ -81,6 +87,7 @@ function createNavidrome({ file, secureStorage, fetchImpl = fetch }) {
   }
   return {
     status,
+    cancel,
     async connect(input) {
       if (connecting) throw new Error('A connection attempt is already running.')
       connecting = true
@@ -99,7 +106,7 @@ function createNavidrome({ file, secureStorage, fetchImpl = fetch }) {
       } finally { connecting = false }
     },
     disconnect() {
-      revision++
+      cancel()
       fs.rmSync(file, { force: true })
       connection = null
       storageError = ''
