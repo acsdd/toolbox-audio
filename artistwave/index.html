@@ -22,11 +22,14 @@
   <title>ArtistWave — Your artist, your station</title>
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="music.css" />
+  <link rel="stylesheet" href="family-foundation.css" />
+  <link rel="stylesheet" href="family-audio.css" />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
   <link rel="apple-touch-icon" href="icon-192.png" />
 </head>
 <body>
+  <span id="locationName" class="family-view-name" aria-live="polite">Discover</span>
   <div class="app-shell">
       <header class="topbar">
         <nav class="mode-tabs" aria-label="Switch ArtistWave workspace">
@@ -58,7 +61,7 @@
           </details>
         </div></header>
     <aside class="sidebar">
-      <a href="#" class="brand" aria-label="ArtistWave home"><span class="brand-icon">◖◗</span><span>artist<span class="brand-light">wave</span></span></a>
+      <a href="#" class="brand" aria-label="AudioWave home"><img class="family-app-mark" src="audiowave-mark.svg" alt="" /><span>audio<span class="brand-light">wave</span><small>Your music. Your flow.</small></span></a>
       <div class="side-label">YOUR LIBRARY</div>
       <button class="nav-item active" id="discoverNav"><span>◈</span> Discover</button>
       <button class="nav-item" id="favoritesNav"><span>♡</span> Favorites <span class="nav-count" id="favoriteCount">0</span></button>

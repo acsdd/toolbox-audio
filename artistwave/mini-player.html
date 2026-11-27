@@ -6,13 +6,15 @@
   <meta name="theme-color" content="#101d1d" />
   <title>ArtistWave — Mini Player</title>
   <link rel="stylesheet" href="mini-player.css" />
+  <link rel="stylesheet" href="family-foundation.css" />
+  <link rel="stylesheet" href="family-audio.css" />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
 </head>
 <body>
   <div class="mini-shell">
     <header class="mini-top">
-      <div class="mini-brand"><span class="brand-icon">◖◗</span><span>artist<strong>wave</strong></span></div>
+      <div class="mini-brand"><img class="family-app-mark" src="audiowave-mark.svg" alt="" /><span>audio<strong>wave</strong></span></div>
       <span class="mini-label">MINI PLAYER</span>
       <label class="theme-select-label"><span>Select theme</span><select id="themeSelect" aria-label="Color theme"><option value="night">Night</option><option value="day">Day</option><option value="bright-night">Bright Night</option><option value="ocean">Ocean</option><option value="plum">Plum</option><optgroup label="Looney Tunes"><option value="bugs">Bugs Bunny</option><option value="daffy">Daffy Duck</option><option value="tweety">Tweety</option><option value="sylvester">Sylvester</option><option value="taz">Tasmanian Devil</option><option value="roadrunner">Road Runner</option></optgroup></select></label>
       <button id="miniClose" class="mini-close" type="button" aria-label="Close mini player">×</button>
